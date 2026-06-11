@@ -21,6 +21,12 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
     answer_cache_ttl_seconds: int = 86400
+    max_request_bytes: int = 65536
+
+    # Langfuse LLM tracing — disabled unless both keys are set
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
 
     # LLM provider — any OpenAI-compatible API; defaults target OpenRouter
     llm_api_key: str = ""

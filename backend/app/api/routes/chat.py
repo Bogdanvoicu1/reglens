@@ -10,9 +10,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
+from app.core.config import get_settings
 from app.core.security import AuthContext
 from app.db.models import Conversation, Message
 from app.db.session import get_session
+from app.observability.rag_metrics import CACHE_EVENTS, RETRIEVAL_TOP_SCORE, record_chat
+from app.observability.tracing import ChatTrace
 from app.rag.generation.grounded import build_messages, validate_answer
 from app.rag.retrieval.hybrid import retrieve
 from app.services.answer_cache import (
@@ -83,11 +86,15 @@ async def _chat_stream(
     req: ChatRequest, session: AsyncSession, auth: AuthContext
 ) -> AsyncIterator[str]:
     start = time.perf_counter()
+    trace = ChatTrace(req.question, str(auth.user_id), str(auth.tenant_id))
     try:
         fingerprint = await corpus_fingerprint(session, req.corpus_slugs)
         key = cache_key(req.question, fingerprint, req.top_k)
         if cached := await get_cached_answer(key):
+            CACHE_EVENTS.labels("hit").inc()
             latency_ms = round((time.perf_counter() - start) * 1000)
+            record_chat("cached", latency_ms / 1000)
+            trace.end({"status": "cached"})
             conversation_id = await _persist_exchange(
                 session,
                 auth,
@@ -111,9 +118,11 @@ async def _chat_stream(
             )
             return
 
+        CACHE_EVENTS.labels("miss").inc()
         embedder = EmbeddingClient()
         llm = ChatClient()
         try:
+            retrieval_span = trace.retrieval(req.question)
             query_embedding = (await embedder.embed([req.question]))[0]
             sources = await retrieve(
                 session,
@@ -122,8 +131,15 @@ async def _chat_stream(
                 corpus_slugs=req.corpus_slugs,
                 top_k=req.top_k,
             )
+            retrieval_span.end(
+                [{"ref": s.ref, "corpus": s.corpus_slug, "score": s.score} for s in sources]
+            )
+            if sources:
+                RETRIEVAL_TOP_SCORE.observe(sources[0].score)
 
             if not sources or sources[0].score < MIN_TOP_SCORE:
+                record_chat("refused_pre", time.perf_counter() - start)
+                trace.end({"status": "refused_pre"})
                 yield _sse(
                     "refusal",
                     {"reason": "No sufficiently relevant passages found in the corpus."},
@@ -142,9 +158,11 @@ async def _chat_stream(
             ]
             yield _sse("sources", {"sources": source_payload})
 
+            prompt_messages = build_messages(req.question, sources)
+            generation = trace.generation(get_settings().generation_model, prompt_messages)
             result = None
             async for token, result in llm.stream(  # noqa: B007 — result accumulates state
-                build_messages(req.question, sources)
+                prompt_messages
             ):
                 yield _sse("token", {"token": token})
 
@@ -152,6 +170,9 @@ async def _chat_stream(
             validation = validate_answer(full_text, len(sources))
             latency_ms = round((time.perf_counter() - start) * 1000)
             usage = result.usage if result else {}
+            generation.end(full_text, usage)
+            record_chat(validation.status, latency_ms / 1000, usage)
+            trace.end({"status": validation.status, "cited": validation.cited_indices})
             log.info(
                 "chat_answer",
                 status=validation.status,
@@ -196,6 +217,8 @@ async def _chat_stream(
             await llm.aclose()
     except Exception:
         log.exception("chat_stream_failed")
+        record_chat("error", time.perf_counter() - start)
+        trace.end({"status": "error"})
         yield _sse("error", {"message": "Internal error while generating the answer."})
 
 

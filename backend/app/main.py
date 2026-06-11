@@ -4,7 +4,9 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.routes import chat, conversations, corpora, health
 from app.core.config import get_settings
+from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
+from app.observability.hardening import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.observability.middleware import RequestContextMiddleware
 
 
@@ -17,6 +19,9 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description="Grounded compliance Q&A over the EU AI Act and GDPR.",
     )
+    register_error_handlers(app)
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,

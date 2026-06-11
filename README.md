@@ -73,6 +73,27 @@ curl -N localhost:8000/api/v1/chat \
   single atomic Redis Lua script; 429 responses carry `Retry-After`. Limits
   survive API restarts because the window lives in Redis.
 
+### Observability
+
+- Structured JSON logs with request IDs; Prometheus metrics at `/metrics/`
+  (HTTP RED metrics plus RAG-specific series: chat outcomes, retrieval top
+  score, token throughput, LLM spend, cache hit ratio).
+- Two auto-provisioned Grafana dashboards (`admin`/`admin` at
+  http://localhost:3001): **Service Health** and **RAG Quality & Cost**.
+- Optional [Langfuse](https://langfuse.com) LLM tracing — set
+  `REGLENS_LANGFUSE_PUBLIC_KEY`/`_SECRET_KEY` and every chat produces a trace
+  with retrieval and generation spans, token usage, cost, and tenant tags.
+  Off by default; zero overhead when unset.
+
+### Hardening
+
+- RFC 7807 `application/problem+json` errors everywhere (with request IDs);
+  unhandled exceptions never leak internals.
+- Security headers, request body size limits, strict input validation.
+- Prompt-injection defenses: retrieved text is wrapped in delimited source
+  blocks the model is instructed to treat as data; citations are
+  post-validated server-side.
+
 - API docs: http://localhost:8000/docs
 - Metrics: http://localhost:8000/metrics/ · Grafana: http://localhost:3001
 
@@ -129,5 +150,5 @@ uv run mypy app        # types
 - [x] M3 — Supabase-compatible JWT auth, JIT tenancy, Redis sliding-window rate limiting, answer caching, conversation history
 - [x] M4 — Evaluation harness: golden dataset, recall@K/MRR, LLM-judge faithfulness, threshold gates, CI workflow
 - [x] M5 — React SPA: streaming chat, clickable citation chips, source panel, history, corpus filter; nginx Docker image
-- [ ] M6 — Grafana dashboards, hardening
+- [x] M6 — RAG metrics + provisioned Grafana dashboards, optional Langfuse tracing, problem+json errors, security headers, body limits
 - [ ] M7 — Docs & demo
