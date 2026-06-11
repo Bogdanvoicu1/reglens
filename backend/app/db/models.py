@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Computed, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, created_at_col, uuid_pk
@@ -57,6 +57,7 @@ class Chunk(Base):
             postgresql_using="hnsw",
             postgresql_ops={"embedding": "vector_cosine_ops"},
         ),
+        Index("ix_chunks_tsv", "tsv", postgresql_using="gin"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -65,6 +66,9 @@ class Chunk(Base):
     text: Mapped[str] = mapped_column(Text)
     token_count: Mapped[int]
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM), nullable=True)
+    tsv: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('english', text)", persisted=True), nullable=True
+    )
 
     document: Mapped[Document] = relationship(back_populates="chunks")
 

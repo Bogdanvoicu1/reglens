@@ -57,7 +57,7 @@ uv run mypy app        # types
 
 - [x] M0 — Foundation: API skeleton, Alembic, Docker, observability middleware, CI
 - [x] M1 — Corpus ingestion (EUR-Lex → hierarchy-aware chunks → embeddings, OpenRouter-compatible)
-- [ ] M2 — Hybrid retrieval + grounded generation + SSE
+- [x] M2 — Hybrid retrieval (pgvector + FTS + RRF) + grounded generation with citation validation + SSE
 - [ ] M3 — Supabase auth, tenancy, rate limiting, caching
 - [ ] M4 — Evaluation harness (recall@K / MRR in CI, LLM-judge faithfulness)
 - [ ] M5 — React frontend

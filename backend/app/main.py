@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from prometheus_client import make_asgi_app
 
-from app.api.routes import health
+from app.api.routes import chat, health
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.observability.middleware import RequestContextMiddleware
@@ -18,6 +18,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(RequestContextMiddleware)
     app.include_router(health.router, tags=["health"])
+    app.include_router(chat.router)
     app.mount("/metrics", make_asgi_app())
     return app
 
