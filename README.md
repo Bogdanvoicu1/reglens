@@ -41,6 +41,31 @@ hierarchy-aware chunks with contextual headers, embeds them via the
 configured provider, and stores everything transactionally. Use
 `--skip-embed` to inspect parsing without an API key.
 
+### Authentication
+
+The API verifies Supabase-compatible JWTs — either HS256 with
+`REGLENS_SUPABASE_JWT_SECRET` (legacy projects, local dev) or asymmetric keys
+via `REGLENS_SUPABASE_JWKS_URL` (new Supabase projects). A user's first
+authenticated request just-in-time provisions a personal tenant; an
+`app_metadata.tenant_id` claim attaches users to an existing workspace
+instead. For local development, mint a token without any Supabase project:
+
+```bash
+uv run python scripts/dev_token.py --email you@example.com
+curl -N localhost:8000/api/v1/chat \
+  -H "Authorization: Bearer <token>" -H 'Content-Type: application/json' \
+  -d '{"question":"Which AI practices are prohibited?"}'
+```
+
+### Caching & rate limiting
+
+- Successful grounded answers are cached in Redis, keyed by normalized
+  question + generation model + exact corpus versions (re-ingesting or
+  switching models invalidates naturally). Repeat questions return in ~1ms.
+- Per-tenant sliding-window rate limiting (default 30 req/min) runs as a
+  single atomic Redis Lua script; 429 responses carry `Retry-After`. Limits
+  survive API restarts because the window lives in Redis.
+
 - API docs: http://localhost:8000/docs
 - Metrics: http://localhost:8000/metrics/ · Grafana: http://localhost:3001
 
@@ -94,7 +119,7 @@ uv run mypy app        # types
 - [x] M0 — Foundation: API skeleton, Alembic, Docker, observability middleware, CI
 - [x] M1 — Corpus ingestion (EUR-Lex → hierarchy-aware chunks → embeddings, OpenRouter-compatible)
 - [x] M2 — Hybrid retrieval (pgvector + FTS + RRF) + grounded generation with citation validation + SSE
-- [ ] M3 — Supabase auth, tenancy, rate limiting, caching
+- [x] M3 — Supabase-compatible JWT auth, JIT tenancy, Redis sliding-window rate limiting, answer caching, conversation history
 - [x] M4 — Evaluation harness: golden dataset, recall@K/MRR, LLM-judge faithfulness, threshold gates, CI workflow
 - [ ] M5 — React frontend
 - [ ] M6 — Grafana dashboards, hardening

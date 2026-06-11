@@ -12,9 +12,15 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://reglens:reglens@localhost:5432/reglens"
     redis_url: str = "redis://localhost:6379/0"
 
-    # Supabase JWT verification (M3)
+    # Auth — set EITHER the legacy Supabase JWT secret (HS256) OR a JWKS URL
+    # (new Supabase projects: https://<ref>.supabase.co/auth/v1/.well-known/jwks.json)
+    supabase_jwt_secret: str = ""
     supabase_jwks_url: str = ""
-    supabase_issuer: str = ""
+    supabase_issuer: str = ""  # optional; verified when set
+    supabase_audience: str = "authenticated"
+
+    cors_origins: list[str] = ["http://localhost:5173"]
+    answer_cache_ttl_seconds: int = 86400
 
     # LLM provider — any OpenAI-compatible API; defaults target OpenRouter
     llm_api_key: str = ""

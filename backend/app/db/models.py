@@ -20,6 +20,18 @@ class Tenant(Base):
     created_at: Mapped[datetime] = created_at_col()
 
 
+class User(Base):
+    """Mirrors Supabase identities; id comes from the JWT `sub` claim."""
+
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    role: Mapped[str] = mapped_column(String(50), default="member")
+    created_at: Mapped[datetime] = created_at_col()
+
+
 class Corpus(Base):
     __tablename__ = "corpora"
     __table_args__ = (UniqueConstraint("slug", "version"),)
@@ -75,6 +87,7 @@ class Chunk(Base):
 
 class Conversation(Base):
     __tablename__ = "conversations"
+    __table_args__ = (Index("ix_conversations_tenant_created", "tenant_id", "created_at"),)
 
     id: Mapped[uuid.UUID] = uuid_pk()
     tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))

@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from prometheus_client import make_asgi_app
+from starlette.middleware.cors import CORSMiddleware
 
-from app.api.routes import chat, health
+from app.api.routes import chat, conversations, health
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.observability.middleware import RequestContextMiddleware
@@ -17,8 +18,15 @@ def create_app() -> FastAPI:
         description="Grounded compliance Q&A over the EU AI Act and GDPR.",
     )
     app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_methods=["*"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
     app.include_router(health.router, tags=["health"])
     app.include_router(chat.router)
+    app.include_router(conversations.router)
     app.mount("/metrics", make_asgi_app())
     return app
 
