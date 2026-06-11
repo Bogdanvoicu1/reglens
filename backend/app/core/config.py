@@ -16,11 +16,12 @@ class Settings(BaseSettings):
     supabase_jwks_url: str = ""
     supabase_issuer: str = ""
 
-    # LLM providers (M2)
-    openai_api_key: str = ""
-    anthropic_api_key: str = ""
-    embedding_model: str = "text-embedding-3-small"
-    generation_model: str = "gpt-4o-mini"
+    # LLM provider — any OpenAI-compatible API; defaults target OpenRouter
+    llm_api_key: str = ""
+    llm_base_url: str = "https://openrouter.ai/api/v1"
+    embedding_model: str = "openai/text-embedding-3-small"
+    embedding_dim: int = 1536
+    generation_model: str = "openai/gpt-4o-mini"
 
     # Rate limiting defaults (requests per minute per tenant)
     rate_limit_rpm: int = 30

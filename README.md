@@ -28,10 +28,18 @@ observability. See [docs/DESIGN.md](docs/DESIGN.md) and
 ```bash
 docker compose up -d            # postgres+pgvector, redis, api, prometheus, grafana
 cd backend
+cp .env.example .env            # add your OpenRouter (or OpenAI-compatible) API key
 uv sync
 uv run alembic upgrade head     # apply migrations
+uv run python -m app.cli ingest ai-act gdpr   # fetch, parse, chunk, embed, store
 uv run uvicorn app.main:app --reload
 ```
+
+The ingestion CLI downloads the official EUR-Lex HTML (cached under
+`backend/data/raw/`), parses it into articles/recitals, produces
+hierarchy-aware chunks with contextual headers, embeds them via the
+configured provider, and stores everything transactionally. Use
+`--skip-embed` to inspect parsing without an API key.
 
 - API docs: http://localhost:8000/docs
 - Metrics: http://localhost:8000/metrics/ · Grafana: http://localhost:3001
@@ -48,7 +56,7 @@ uv run mypy app        # types
 ## Status
 
 - [x] M0 — Foundation: API skeleton, Alembic, Docker, observability middleware, CI
-- [ ] M1 — Corpus ingestion (EUR-Lex → hierarchy-aware chunks → embeddings)
+- [x] M1 — Corpus ingestion (EUR-Lex → hierarchy-aware chunks → embeddings, OpenRouter-compatible)
 - [ ] M2 — Hybrid retrieval + grounded generation + SSE
 - [ ] M3 — Supabase auth, tenancy, rate limiting, caching
 - [ ] M4 — Evaluation harness (recall@K / MRR in CI, LLM-judge faithfulness)
