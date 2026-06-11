@@ -4,6 +4,8 @@
 multi-tenant RAG platform. Every answer is cited to the article/recital level;
 questions the corpus cannot support are refused, not hallucinated.
 
+![RegLens chat with cited sources](docs/screenshot.png)
+
 > ⚠️ RegLens provides information, not legal advice.
 
 ## Why this exists
@@ -33,7 +35,12 @@ uv sync
 uv run alembic upgrade head     # apply migrations
 uv run python -m app.cli ingest ai-act gdpr   # fetch, parse, chunk, embed, store
 uv run uvicorn app.main:app --reload
+
+cd ../frontend && npm install && npm run dev   # SPA on http://localhost:5173
 ```
+
+Or run the whole stack containerized: `docker compose up -d --build` serves
+the SPA at http://localhost:3000 through nginx (SSE-safe proxy to the API).
 
 The ingestion CLI downloads the official EUR-Lex HTML (cached under
 `backend/data/raw/`), parses it into articles/recitals, produces
@@ -121,6 +128,6 @@ uv run mypy app        # types
 - [x] M2 — Hybrid retrieval (pgvector + FTS + RRF) + grounded generation with citation validation + SSE
 - [x] M3 — Supabase-compatible JWT auth, JIT tenancy, Redis sliding-window rate limiting, answer caching, conversation history
 - [x] M4 — Evaluation harness: golden dataset, recall@K/MRR, LLM-judge faithfulness, threshold gates, CI workflow
-- [ ] M5 — React frontend
+- [x] M5 — React SPA: streaming chat, clickable citation chips, source panel, history, corpus filter; nginx Docker image
 - [ ] M6 — Grafana dashboards, hardening
 - [ ] M7 — Docs & demo
