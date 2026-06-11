@@ -44,6 +44,42 @@ configured provider, and stores everything transactionally. Use
 - API docs: http://localhost:8000/docs
 - Metrics: http://localhost:8000/metrics/ · Grafana: http://localhost:3001
 
+## Evaluation
+
+RegLens ships a versioned golden dataset (47 labeled questions over both
+regulations, including out-of-corpus and prompt-injection adversarial cases)
+and a threshold-gated eval harness that exercises the real production
+pipeline:
+
+```bash
+cd backend
+uv run python -m evals.cli retrieval     # deterministic: recall@K, MRR
+uv run python -m evals.cli generation    # full pipeline + LLM-as-judge
+```
+
+Measured baseline (dataset v1, `gpt-4o-mini` generation, `gpt-4o` judge):
+
+| Metric | Result | Gate |
+|---|---|---|
+| Retrieval recall@8 | **1.00** | ≥ 0.85 |
+| Retrieval recall@5 | 0.93 | — |
+| Retrieval MRR | 0.71 | ≥ 0.60 |
+| Faithfulness (judge) | **0.98** | ≥ 0.80 |
+| Citation precision (judge) | 0.95 | ≥ 0.80 |
+| Answer relevance (judge) | 0.99 | — |
+| Refusal accuracy (adversarial) | **1.00** | ≥ 0.80 |
+| False refusal rate | 0.00 | ≤ 0.10 |
+
+The CLI exits non-zero on any gate failure, persists runs to the `eval_runs`
+table, and writes a full report to `evals/reports/latest.json`. A
+`workflow_dispatch` GitHub Action provisions Postgres, ingests the corpus,
+and runs the suite in CI.
+
+Known tuning opportunity (documented, intentionally not over-fit): recitals
+often outrank operative articles in MRR because their narrative style is
+semantically closer to natural questions; kind-weighted RRF would lift MRR
+further. Recall@8 = 1.0 means generation always receives the right article.
+
 ## Development
 
 ```bash
@@ -59,7 +95,7 @@ uv run mypy app        # types
 - [x] M1 — Corpus ingestion (EUR-Lex → hierarchy-aware chunks → embeddings, OpenRouter-compatible)
 - [x] M2 — Hybrid retrieval (pgvector + FTS + RRF) + grounded generation with citation validation + SSE
 - [ ] M3 — Supabase auth, tenancy, rate limiting, caching
-- [ ] M4 — Evaluation harness (recall@K / MRR in CI, LLM-judge faithfulness)
+- [x] M4 — Evaluation harness: golden dataset, recall@K/MRR, LLM-judge faithfulness, threshold gates, CI workflow
 - [ ] M5 — React frontend
 - [ ] M6 — Grafana dashboards, hardening
 - [ ] M7 — Docs & demo

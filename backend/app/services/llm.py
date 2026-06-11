@@ -65,5 +65,14 @@ class ChatClient:
                         result.text += token
                         yield token, result
 
+    async def complete(
+        self, messages: list[dict[str, str]], *, temperature: float = 0.0
+    ) -> StreamResult:
+        """Consume the stream and return the final result (for evals and batch use)."""
+        result = StreamResult()
+        async for _, result in self.stream(messages, temperature=temperature):  # noqa: B007
+            pass
+        return result
+
     async def aclose(self) -> None:
         await self._client.aclose()

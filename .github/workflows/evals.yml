@@ -1,0 +1,48 @@
+name: Evals
+
+# Full eval suite needs an LLM API key and a populated corpus, so it runs on
+# demand (and can be scheduled) rather than on every PR. Requires the
+# OPENROUTER_API_KEY repository secret.
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Eval suite"
+        type: choice
+        options: [retrieval, generation, all]
+        default: retrieval
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: reglens
+          POSTGRES_PASSWORD: reglens
+          POSTGRES_DB: reglens
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U reglens"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      REGLENS_DATABASE_URL: postgresql+asyncpg://reglens:reglens@localhost:5432/reglens
+      REGLENS_LLM_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+      - run: uv run alembic upgrade head
+      - run: uv run python -m app.cli ingest ai-act gdpr
+      - run: uv run python -m evals.cli ${{ inputs.suite }} --no-save
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-report
+          path: backend/evals/reports/latest.json

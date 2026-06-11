@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     embedding_model: str = "openai/text-embedding-3-small"
     embedding_dim: int = 1536
     generation_model: str = "openai/gpt-4o-mini"
+    judge_model: str = "openai/gpt-4o"
 
     # Rate limiting defaults (requests per minute per tenant)
     rate_limit_rpm: int = 30
