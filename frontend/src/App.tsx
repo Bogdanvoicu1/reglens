@@ -17,7 +17,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex h-screen bg-slate-100">
+      <div className="flex h-screen bg-zinc-950">
         <HistorySidebar
           activeId={conversationId}
           onSelect={setConversationId}

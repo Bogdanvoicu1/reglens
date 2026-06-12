@@ -1,43 +1,88 @@
 import { useState } from "react";
 import { setToken } from "../lib/auth";
 
+const FEATURES = [
+  ["Cited answers", "Every claim links to the exact article or recital."],
+  ["Honest refusals", "Out-of-corpus questions are refused, not improvised."],
+  ["Eval-gated quality", "Faithfulness 0.99 · refusal accuracy 1.00 on a versioned golden dataset."],
+];
+
 export function TokenGate({ onAuthed }: { onAuthed: () => void }) {
   const [value, setValue] = useState("");
+  const valid = value.trim().split(".").length === 3;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">RegLens</h1>
-        <p className="mb-6 text-sm text-slate-500">
-          Grounded compliance Q&A over the EU AI Act and GDPR.
-        </p>
-        <label className="mb-2 block text-sm font-medium text-slate-700">
-          Access token
-        </label>
-        <textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          rows={4}
-          placeholder="Paste your JWT…"
-          className="mb-2 w-full rounded-lg border border-slate-300 p-2 font-mono text-xs
-                     focus:border-indigo-500 focus:outline-none"
-        />
-        <p className="mb-4 text-xs text-slate-400">
-          Sign in with your Supabase session token, or mint a local one:{" "}
-          <code className="rounded bg-slate-100 px-1">
-            uv run python scripts/dev_token.py
-          </code>
-        </p>
-        <button
-          disabled={value.trim().split(".").length !== 3}
-          onClick={() => {
-            setToken(value);
-            onAuthed();
-          }}
-          className="w-full rounded-lg bg-indigo-600 py-2 font-semibold text-white
-                     hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Continue
-        </button>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 p-6">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 left-1/2 h-150 w-225 -translate-x-1/2
+                   rounded-full bg-blue-600/25 blur-[140px]"
+      />
+      <div className="relative grid w-full max-w-4xl gap-10 md:grid-cols-2 md:items-center">
+        <div>
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-lg font-bold text-white shadow-lg shadow-blue-900/40">
+              R
+            </div>
+            <span className="text-xl font-semibold tracking-tight text-white">RegLens</span>
+          </div>
+          <h1 className="mb-3 text-3xl font-semibold tracking-tight text-white">
+            Compliance answers you can{" "}
+            <span className="bg-gradient-to-r from-blue-400 to-sky-300 bg-clip-text text-transparent">
+              actually verify
+            </span>
+            .
+          </h1>
+          <p className="mb-8 text-sm leading-relaxed text-zinc-400">
+            Grounded Q&A over the EU AI Act and GDPR. Hybrid retrieval, citation-validated
+            generation, multi-tenant — built as a production RAG system, not a demo.
+          </p>
+          <ul className="space-y-3">
+            {FEATURES.map(([title, body]) => (
+              <li key={title} className="flex gap-3">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                <p className="text-sm text-zinc-400">
+                  <span className="font-medium text-zinc-200">{title}.</span> {body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6 shadow-2xl shadow-black/40 backdrop-blur">
+          <label className="mb-2 block text-sm font-medium text-zinc-300">Access token</label>
+          <textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            rows={4}
+            placeholder="Paste your JWT…"
+            className="mb-2 w-full resize-none rounded-xl border border-white/10 bg-zinc-950/80
+                       p-3 font-mono text-xs text-zinc-300 placeholder:text-zinc-600
+                       focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+          <p className="mb-5 text-xs leading-relaxed text-zinc-500">
+            Use your Supabase session token, or mint a local one:{" "}
+            <code className="rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-zinc-400">
+              uv run python scripts/dev_token.py
+            </code>
+          </p>
+          <button
+            disabled={!valid}
+            onClick={() => {
+              setToken(value);
+              onAuthed();
+            }}
+            className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 py-2.5
+                       text-sm font-semibold text-white shadow-lg shadow-blue-900/40
+                       transition hover:brightness-110 disabled:cursor-not-allowed
+                       disabled:opacity-40 disabled:shadow-none"
+          >
+            Continue
+          </button>
+          <p className="mt-4 text-center text-[11px] text-zinc-600">
+            Regulatory information, not legal advice.
+          </p>
+        </div>
       </div>
     </div>
   );
