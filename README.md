@@ -97,10 +97,30 @@ curl -N localhost:8000/api/v1/chat \
 - API docs: http://localhost:8000/docs
 - Metrics: http://localhost:8000/metrics/ · Grafana: http://localhost:3001
 
+## Cost engineering
+
+Measured levers, in order of impact (full rationale in commit history):
+
+| Strategy | Implementation | Measured effect |
+|---|---|---|
+| Response caching | Redis answer cache keyed by normalized question + model + corpus versions | Repeat answers in ~1 ms, $0 |
+| Prompt compression | Retrieved chunks grouped per article, long embedded headers replaced by short labels (`GDPR — Art. 6`) | −15% prompt tokens on identical questions, evals confirm no quality loss |
+| Output capping | `max_tokens=1024` on every generation | Bounds worst-case cost per request |
+| Embedding cache | Redis-cached query embeddings (7-day TTL) | Repeat questions skip the embedding call even on answer-cache misses |
+| Model selection | `evals.cli generation --generation-model <candidate>` runs the full gate suite against a cheaper model before switching the default | Eval-gated downgrades instead of vibes |
+| Refusal-before-generation | Weak retrieval refuses pre-LLM | Off-corpus questions cost $0 in generation |
+| Batching | Ingestion embeds 64 chunks/call; eval questions embed in one call | Chat requests are deliberately *not* batched — latency beats batching for interactive use |
+
+Per-request cost (gpt-4o-mini, OpenRouter-reported): ~$0.0004 per grounded answer.
+
+Security posture, threat model, and the production deployment checklist live
+in [SECURITY.md](SECURITY.md).
+
 ## Evaluation
 
-RegLens ships a versioned golden dataset (47 labeled questions over both
-regulations, including out-of-corpus and prompt-injection adversarial cases)
+RegLens ships a versioned golden dataset (50 labeled questions over both
+regulations, including out-of-corpus and red-team adversarial cases:
+instruction override, system-prompt extraction, outside-knowledge bait)
 and a threshold-gated eval harness that exercises the real production
 pipeline:
 
@@ -110,17 +130,17 @@ uv run python -m evals.cli retrieval     # deterministic: recall@K, MRR
 uv run python -m evals.cli generation    # full pipeline + LLM-as-judge
 ```
 
-Measured baseline (dataset v1, `gpt-4o-mini` generation, `gpt-4o` judge):
+Measured baseline (dataset v2, `gpt-4o-mini` generation, `gpt-4o` judge):
 
 | Metric | Result | Gate |
 |---|---|---|
 | Retrieval recall@8 | **1.00** | ≥ 0.85 |
 | Retrieval recall@5 | 0.93 | — |
-| Retrieval MRR | 0.71 | ≥ 0.60 |
+| Retrieval MRR | 0.72 | ≥ 0.60 |
 | Faithfulness (judge) | **0.98** | ≥ 0.80 |
 | Citation precision (judge) | 0.95 | ≥ 0.80 |
 | Answer relevance (judge) | 0.99 | — |
-| Refusal accuracy (adversarial) | **1.00** | ≥ 0.80 |
+| Refusal accuracy (8 adversarial/red-team cases) | **1.00** | ≥ 0.80 |
 | False refusal rate | 0.00 | ≤ 0.10 |
 
 The CLI exits non-zero on any gate failure, persists runs to the `eval_runs`
@@ -151,4 +171,5 @@ uv run mypy app        # types
 - [x] M4 — Evaluation harness: golden dataset, recall@K/MRR, LLM-judge faithfulness, threshold gates, CI workflow
 - [x] M5 — React SPA: streaming chat, clickable citation chips, source panel, history, corpus filter; nginx Docker image
 - [x] M6 — RAG metrics + provisioned Grafana dashboards, optional Langfuse tracing, problem+json errors, security headers, body limits
+- [x] Security & cost hardening — see SECURITY.md and Cost engineering
 - [ ] M7 — Docs & demo

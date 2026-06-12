@@ -6,7 +6,7 @@ import re
 import httpx
 
 from app.core.config import get_settings
-from app.rag.retrieval.hybrid import RetrievedChunk
+from app.rag.generation.grounded import GroupedSource
 
 JUDGE_PROMPT = """You are a strict evaluator of a compliance assistant's answer.
 
@@ -38,7 +38,7 @@ class JudgeClient:
             timeout=120,
         )
 
-    async def judge(self, question: str, answer: str, sources: list[RetrievedChunk]) -> dict:
+    async def judge(self, question: str, answer: str, sources: list[GroupedSource]) -> dict:
         blocks = "\n\n".join(
             f"<source id={i}>\n{s.text}\n</source>" for i, s in enumerate(sources, start=1)
         )

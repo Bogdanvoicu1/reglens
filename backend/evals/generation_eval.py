@@ -13,7 +13,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.api.routes.chat import MIN_TOP_SCORE
-from app.rag.generation.grounded import build_messages, validate_answer
+from app.rag.generation.grounded import build_messages, group_sources, validate_answer
 from app.rag.retrieval.hybrid import retrieve
 from app.services.embeddings import EmbeddingClient
 from app.services.llm import ChatClient
@@ -56,8 +56,9 @@ async def _eval_one(
                     entry.id, entry.category, entry.expect_refusal, "refused_pre"
                 )
 
-            result = await llm.complete(build_messages(entry.question, sources))
-            validation = validate_answer(result.text, len(sources))
+            grouped = group_sources(sources)
+            result = await llm.complete(build_messages(entry.question, grouped))
+            validation = validate_answer(result.text, len(grouped))
             gen = GenerationResult(
                 entry.id,
                 entry.category,
@@ -66,7 +67,7 @@ async def _eval_one(
                 answer_preview=result.text[:200],
             )
             if validation.status == "ok" and not entry.expect_refusal:
-                verdict = await judge.judge(entry.question, result.text, sources)
+                verdict = await judge.judge(entry.question, result.text, grouped)
                 gen.faithfulness = float(verdict["faithfulness"])
                 gen.citation_precision = float(verdict["citation_precision"])
                 gen.answer_relevance = float(verdict["answer_relevance"])
@@ -89,9 +90,10 @@ async def run_generation_eval(
     entries: list[EvalEntry],
     *,
     judge_model: str | None = None,
+    generation_model: str | None = None,
 ) -> tuple[list[GenerationResult], dict]:
     embedder = EmbeddingClient()
-    llm = ChatClient()
+    llm = ChatClient(generation_model)
     judge = JudgeClient(judge_model)
     try:
         embeddings = await embedder.embed([e.question for e in entries])
@@ -112,8 +114,11 @@ async def run_generation_eval(
     answerable = [r for r in results if not r.expect_refusal]
     judged = [r for r in answerable if r.faithfulness is not None]
 
+    from app.core.config import get_settings
+
     metrics = {
         "n": len(results),
+        "generation_model": generation_model or get_settings().generation_model,
         "refusal_accuracy": _mean([1.0 if r.status in refused else 0.0 for r in refusal_entries]),
         "false_refusal_rate": _mean([1.0 if r.status in refused else 0.0 for r in answerable]),
         "faithfulness": _mean([r.faithfulness for r in judged]),

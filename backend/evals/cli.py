@@ -70,7 +70,9 @@ def _check_thresholds(metrics: dict) -> list[str]:
     return failures
 
 
-async def _run(suite: str, judge_model: str | None, save: bool) -> int:
+async def _run(
+    suite: str, judge_model: str | None, generation_model: str | None, save: bool
+) -> int:
     dataset = load_dataset()
     sessionmaker = get_sessionmaker()
     metrics: dict = {"dataset_version": dataset.version, "git_sha": _git_sha()}
@@ -84,7 +86,10 @@ async def _run(suite: str, judge_model: str | None, save: bool) -> int:
 
     if suite in ("generation", "all"):
         gen_results, gen_metrics = await run_generation_eval(
-            sessionmaker, dataset.entries, judge_model=judge_model
+            sessionmaker,
+            dataset.entries,
+            judge_model=judge_model,
+            generation_model=generation_model,
         )
         metrics["generation"] = gen_metrics
         details["generation"] = [asdict(r) for r in gen_results]
@@ -125,9 +130,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="evals")
     parser.add_argument("suite", choices=["retrieval", "generation", "all"])
     parser.add_argument("--judge-model", default=None)
+    parser.add_argument(
+        "--generation-model",
+        default=None,
+        help="Override the generation model to evaluate a candidate (e.g. a cheaper one) "
+        "against the same gates before changing the default",
+    )
     parser.add_argument("--no-save", action="store_true", help="Skip persisting to eval_runs")
     args = parser.parse_args()
-    sys.exit(asyncio.run(_run(args.suite, args.judge_model, save=not args.no_save)))
+    sys.exit(
+        asyncio.run(
+            _run(args.suite, args.judge_model, args.generation_model, save=not args.no_save)
+        )
+    )
 
 
 if __name__ == "__main__":

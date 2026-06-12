@@ -62,3 +62,45 @@ class TestFTSQuery:
 
         q = fts_query_text("Lawful bases for lawful processing under the GDPR?")
         assert q == "lawful OR bases OR for OR processing OR under OR the OR gdpr"
+
+
+class TestGroupSources:
+    def _chunk(self, ref, text, score=0.03, slug="gdpr"):
+        import uuid as _uuid
+
+        from app.rag.retrieval.hybrid import RetrievedChunk
+
+        return RetrievedChunk(_uuid.uuid4(), text, ref, "Lawfulness of processing", slug, score)
+
+    def test_merges_same_article_and_strips_embedded_headers(self):
+        from app.rag.generation.grounded import group_sources
+
+        chunks = [
+            self._chunk("Art. 6", "[Regulation (EU) 2016/679 — Art. 6]\n1. First paragraph."),
+            self._chunk("Art. 7", "[Regulation (EU) 2016/679 — Art. 7]\nConsent conditions."),
+            self._chunk(
+                "Art. 6", "[Regulation (EU) 2016/679 — Art. 6]\n2. Second paragraph.", 0.05
+            ),
+        ]
+        grouped = group_sources(chunks)
+        assert [g.ref for g in grouped] == ["Art. 6", "Art. 7"]  # first-seen order
+        art6 = grouped[0]
+        assert art6.text.startswith("GDPR — Art. 6: Lawfulness of processing\n")
+        assert "1. First paragraph." in art6.body and "2. Second paragraph." in art6.body
+        assert "[Regulation" not in art6.text  # embedded headers stripped
+        assert art6.score == 0.05  # max of members
+
+    def test_token_reduction_vs_ungrouped(self):
+        from app.rag.generation.grounded import build_messages, group_sources
+
+        long_header = (
+            "[Regulation (EU) 2016/679 (General Data Protection Regulation) "
+            "— Art. 6: Lawfulness of processing]"
+        )
+        chunks = [self._chunk("Art. 6", f"{long_header}\nParagraph {i}.") for i in range(4)]
+        grouped_len = len(build_messages("q", group_sources(chunks))[1]["content"])
+        # Naive prompt: every chunk as its own block with the long header.
+        naive = "\n\n".join(
+            f"<source id={i}>\n{c.text}\n</source>" for i, c in enumerate(chunks, 1)
+        )
+        assert grouped_len < len(naive) * 0.6

@@ -1,14 +1,22 @@
 {
-  "created_at": "2026-06-11T22:11:47.402566+00:00",
+  "created_at": "2026-06-12T13:13:47.422357+00:00",
   "metrics": {
-    "dataset_version": "v1",
-    "git_sha": "af878f8",
+    "dataset_version": "v2",
+    "git_sha": "eec41d8",
+    "retrieval": {
+      "n": 42,
+      "recall_at_5": 0.9286,
+      "recall_at_8": 1.0,
+      "mrr": 0.7213,
+      "misses": []
+    },
     "generation": {
-      "n": 47,
+      "n": 50,
+      "generation_model": "openai/gpt-4o-mini",
       "refusal_accuracy": 1.0,
       "false_refusal_rate": 0.0,
-      "faithfulness": 0.9781,
-      "citation_precision": 0.9502,
+      "faithfulness": 0.9881,
+      "citation_precision": 0.9536,
       "answer_relevance": 0.9929,
       "judge_pass_rate": 0.9286,
       "validation_failures": [],
@@ -19,6 +27,583 @@
     "passed": true
   },
   "details": {
+    "retrieval": [
+      {
+        "entry_id": "gdpr-principles",
+        "category": "gdpr-principles",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "gdpr:Recital 39",
+          "gdpr:Art. 5",
+          "gdpr:Recital 78",
+          "gdpr:Recital 45",
+          "ai-act:Recital 10"
+        ]
+      },
+      {
+        "entry_id": "gdpr-lawful-bases",
+        "category": "gdpr-principles",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.3333333333333333,
+        "top_refs": [
+          "gdpr:Recital 45",
+          "gdpr:Recital 50",
+          "gdpr:Art. 6",
+          "gdpr:Recital 47",
+          "gdpr:Art. 14"
+        ]
+      },
+      {
+        "entry_id": "gdpr-consent-conditions",
+        "category": "gdpr-principles",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 7",
+          "gdpr:Art. 8",
+          "gdpr:Recital 43",
+          "gdpr:Art. 49"
+        ]
+      },
+      {
+        "entry_id": "gdpr-child-consent",
+        "category": "gdpr-principles",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 8",
+          "gdpr:Recital 38",
+          "gdpr:Recital 32",
+          "gdpr:Recital 65",
+          "gdpr:Recital 71"
+        ]
+      },
+      {
+        "entry_id": "gdpr-special-categories",
+        "category": "gdpr-principles",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 9",
+          "gdpr:Recital 52",
+          "gdpr:Recital 51",
+          "gdpr:Recital 53",
+          "ai-act:Art. 10"
+        ]
+      },
+      {
+        "entry_id": "gdpr-territorial-scope",
+        "category": "gdpr-scope",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 3",
+          "gdpr:Recital 16",
+          "ai-act:Recital 158",
+          "gdpr:Recital 22",
+          "gdpr:Art. 9"
+        ]
+      },
+      {
+        "entry_id": "gdpr-info-collection",
+        "category": "gdpr-rights",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "gdpr:Recital 61",
+          "gdpr:Art. 13",
+          "gdpr:Recital 60",
+          "gdpr:Recital 63",
+          "gdpr:Recital 35"
+        ]
+      },
+      {
+        "entry_id": "gdpr-right-access",
+        "category": "gdpr-rights",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.3333333333333333,
+        "top_refs": [
+          "gdpr:Recital 75",
+          "gdpr:Recital 39",
+          "gdpr:Art. 15",
+          "gdpr:Recital 63",
+          "gdpr:Art. 4"
+        ]
+      },
+      {
+        "entry_id": "gdpr-right-erasure",
+        "category": "gdpr-rights",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.25,
+        "top_refs": [
+          "gdpr:Recital 63",
+          "gdpr:Recital 59",
+          "gdpr:Art. 15",
+          "gdpr:Art. 17",
+          "ai-act:Recital 35"
+        ]
+      },
+      {
+        "entry_id": "gdpr-data-portability",
+        "category": "gdpr-rights",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 20",
+          "gdpr:Recital 68",
+          "gdpr:Recital 63",
+          "gdpr:Recital 65"
+        ]
+      },
+      {
+        "entry_id": "gdpr-right-object",
+        "category": "gdpr-rights",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 21",
+          "gdpr:Recital 70",
+          "gdpr:Recital 38",
+          "ai-act:Art. 5",
+          "ai-act:Art. 3"
+        ]
+      },
+      {
+        "entry_id": "gdpr-automated-decisions",
+        "category": "gdpr-rights",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "gdpr:Recital 71",
+          "gdpr:Art. 22",
+          "ai-act:Recital 10",
+          "ai-act:Recital 53",
+          "gdpr:Art. 47"
+        ]
+      },
+      {
+        "entry_id": "gdpr-privacy-by-design",
+        "category": "gdpr-obligations",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "gdpr:Recital 78",
+          "gdpr:Art. 25",
+          "ai-act:Recital 69",
+          "gdpr:Recital 108",
+          "gdpr:Art. 37"
+        ]
+      },
+      {
+        "entry_id": "gdpr-processor-contract",
+        "category": "gdpr-obligations",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 28",
+          "gdpr:Recital 81",
+          "gdpr:Recital 109",
+          "gdpr:Art. 30",
+          "gdpr:Recital 108"
+        ]
+      },
+      {
+        "entry_id": "gdpr-records-processing",
+        "category": "gdpr-obligations",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 30",
+          "gdpr:Recital 82",
+          "ai-act:Art. 10",
+          "gdpr:Recital 97"
+        ]
+      },
+      {
+        "entry_id": "gdpr-breach-authority",
+        "category": "gdpr-obligations",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 33",
+          "gdpr:Recital 86",
+          "gdpr:Recital 87",
+          "gdpr:Recital 85",
+          "gdpr:Art. 34"
+        ]
+      },
+      {
+        "entry_id": "gdpr-breach-subjects",
+        "category": "gdpr-obligations",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 34",
+          "gdpr:Recital 86",
+          "gdpr:Recital 85",
+          "gdpr:Art. 33",
+          "ai-act:Recital 10"
+        ]
+      },
+      {
+        "entry_id": "gdpr-dpia",
+        "category": "gdpr-obligations",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 35",
+          "gdpr:Recital 91"
+        ]
+      },
+      {
+        "entry_id": "gdpr-dpo",
+        "category": "gdpr-obligations",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 37",
+          "gdpr:Art. 39",
+          "gdpr:Art. 38"
+        ]
+      },
+      {
+        "entry_id": "gdpr-adequacy-transfers",
+        "category": "gdpr-transfers",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 45",
+          "gdpr:Art. 49",
+          "gdpr:Recital 108",
+          "gdpr:Recital 112"
+        ]
+      },
+      {
+        "entry_id": "gdpr-fines",
+        "category": "gdpr-enforcement",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "gdpr:Art. 83",
+          "gdpr:Recital 150",
+          "gdpr:Recital 148",
+          "ai-act:Art. 100",
+          "gdpr:Recital 151"
+        ]
+      },
+      {
+        "entry_id": "aiact-definition",
+        "category": "aiact-scope",
+        "recall_at_5": 0.0,
+        "recall_at_8": 1.0,
+        "rr": 0.16666666666666666,
+        "top_refs": [
+          "ai-act:Recital 12",
+          "ai-act:Recital 52",
+          "ai-act:Recital 53",
+          "ai-act:Recital 97",
+          "ai-act:Recital 100"
+        ]
+      },
+      {
+        "entry_id": "aiact-literacy",
+        "category": "aiact-scope",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.3333333333333333,
+        "top_refs": [
+          "ai-act:Recital 20",
+          "ai-act:Recital 91",
+          "ai-act:Art. 4",
+          "ai-act:Recital 165",
+          "ai-act:Art. 26"
+        ]
+      },
+      {
+        "entry_id": "aiact-prohibited",
+        "category": "aiact-prohibited",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "ai-act:Recital 29",
+          "ai-act:Art. 5",
+          "ai-act:Art. 56",
+          "ai-act:Recital 53",
+          "ai-act:Recital 67"
+        ]
+      },
+      {
+        "entry_id": "aiact-biometric-le",
+        "category": "aiact-prohibited",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 5",
+          "ai-act:Recital 34",
+          "ai-act:Recital 38",
+          "ai-act:Recital 35",
+          "ai-act:Recital 32"
+        ]
+      },
+      {
+        "entry_id": "aiact-emotion-workplace",
+        "category": "aiact-prohibited",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.2,
+        "top_refs": [
+          "ai-act:Recital 44",
+          "ai-act:Art. 50",
+          "ai-act:Recital 18",
+          "ai-act:Recital 14",
+          "ai-act:Art. 5"
+        ]
+      },
+      {
+        "entry_id": "aiact-highrisk-classification",
+        "category": "aiact-highrisk",
+        "recall_at_5": 0.0,
+        "recall_at_8": 1.0,
+        "rr": 0.16666666666666666,
+        "top_refs": [
+          "ai-act:Recital 54",
+          "ai-act:Recital 61",
+          "ai-act:Recital 52",
+          "ai-act:Art. 80",
+          "ai-act:Recital 53"
+        ]
+      },
+      {
+        "entry_id": "aiact-risk-management",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 9",
+          "ai-act:Recital 65",
+          "ai-act:Art. 17",
+          "ai-act:Recital 131",
+          "ai-act:Art. 16"
+        ]
+      },
+      {
+        "entry_id": "aiact-data-governance",
+        "category": "aiact-highrisk",
+        "recall_at_5": 0.0,
+        "recall_at_8": 1.0,
+        "rr": 0.14285714285714285,
+        "top_refs": [
+          "ai-act:Recital 67",
+          "ai-act:Recital 68",
+          "ai-act:Art. 17",
+          "ai-act:Recital 66",
+          "ai-act:Recital 71"
+        ]
+      },
+      {
+        "entry_id": "aiact-tech-docs",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 11",
+          "ai-act:Art. 16",
+          "ai-act:Art. 13",
+          "ai-act:Art. 26",
+          "ai-act:Recital 71"
+        ]
+      },
+      {
+        "entry_id": "aiact-logging",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 12",
+          "ai-act:Recital 71",
+          "ai-act:Art. 26",
+          "ai-act:Art. 13",
+          "ai-act:Art. 19"
+        ]
+      },
+      {
+        "entry_id": "aiact-deployer-info",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 13",
+          "ai-act:Art. 26",
+          "ai-act:Recital 93",
+          "ai-act:Recital 72"
+        ]
+      },
+      {
+        "entry_id": "aiact-human-oversight",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 14",
+          "ai-act:Recital 73",
+          "ai-act:Recital 91",
+          "ai-act:Recital 72"
+        ]
+      },
+      {
+        "entry_id": "aiact-accuracy-robustness",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "ai-act:Recital 77",
+          "ai-act:Art. 15",
+          "ai-act:Art. 13",
+          "ai-act:Recital 66",
+          "ai-act:Recital 74"
+        ]
+      },
+      {
+        "entry_id": "aiact-deployer-obligations",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "ai-act:Recital 93",
+          "ai-act:Art. 26",
+          "ai-act:Recital 91",
+          "ai-act:Recital 72",
+          "ai-act:Art. 25"
+        ]
+      },
+      {
+        "entry_id": "aiact-conformity",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 43",
+          "ai-act:Art. 31",
+          "ai-act:Recital 125",
+          "ai-act:Art. 39",
+          "ai-act:Recital 126"
+        ]
+      },
+      {
+        "entry_id": "aiact-chatbot-transparency",
+        "category": "aiact-transparency",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.3333333333333333,
+        "top_refs": [
+          "ai-act:Recital 134",
+          "ai-act:Recital 136",
+          "ai-act:Art. 50",
+          "ai-act:Recital 133",
+          "ai-act:Recital 135"
+        ]
+      },
+      {
+        "entry_id": "aiact-gpai-systemic",
+        "category": "aiact-gpai",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.2,
+        "top_refs": [
+          "ai-act:Recital 111",
+          "ai-act:Recital 115",
+          "ai-act:Recital 112",
+          "ai-act:Recital 97",
+          "ai-act:Art. 51"
+        ]
+      },
+      {
+        "entry_id": "aiact-gpai-obligations",
+        "category": "aiact-gpai",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 53",
+          "ai-act:Recital 97",
+          "ai-act:Recital 106",
+          "ai-act:Art. 55",
+          "ai-act:Art. 54"
+        ]
+      },
+      {
+        "entry_id": "aiact-sandbox",
+        "category": "aiact-scope",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.3333333333333333,
+        "top_refs": [
+          "ai-act:Recital 138",
+          "ai-act:Recital 139",
+          "ai-act:Art. 57",
+          "ai-act:Art. 58"
+        ]
+      },
+      {
+        "entry_id": "aiact-incidents",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 73",
+          "ai-act:Recital 155",
+          "ai-act:Art. 26",
+          "ai-act:Art. 60",
+          "ai-act:Art. 20"
+        ]
+      },
+      {
+        "entry_id": "aiact-fines",
+        "category": "aiact-enforcement",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Art. 99",
+          "ai-act:Art. 101",
+          "ai-act:Recital 169",
+          "ai-act:Art. 100"
+        ]
+      }
+    ],
     "generation": [
       {
         "entry_id": "gdpr-principles",
@@ -30,7 +615,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "The processing of personal data is governed by several key principles as outlined in the General Data Protection Regulation (GDPR):\n\n1. **Lawfulness, Fairness, and Transparency**: Personal data must b"
+        "answer_preview": "The processing of personal data is governed by several key principles as outlined in the GDPR:\n\n1. **Lawfulness, Fairness, and Transparency**: Personal data must be processed lawfully, fairly, and in "
       },
       {
         "entry_id": "gdpr-lawful-bases",
@@ -44,21 +629,19 @@
         "unsupported_claims": [
           "The lawful bases for processing personal data under the GDPR are outlined in Article 6."
         ],
-        "answer_preview": "The lawful bases for processing personal data under the GDPR are outlined in Article 6. They include:\n\n1. **Consent**: The data subject has given clear consent for the processing of their personal dat"
+        "answer_preview": "The lawful bases for processing personal data under the GDPR are outlined in Article 6. They include:\n\n1. Consent of the data subject.\n2. Processing necessary for the performance of a contract to whic"
       },
       {
         "entry_id": "gdpr-consent-conditions",
         "category": "gdpr-principles",
         "expect_refusal": false,
         "status": "ok",
-        "faithfulness": 0.75,
-        "citation_precision": 0.75,
+        "faithfulness": 1.0,
+        "citation_precision": 1.0,
         "answer_relevance": 1.0,
-        "judge_verdict": "fail",
-        "unsupported_claims": [
-          "The data subject must have the ability to demonstrate that they have consented to the processing of their personal data [4]."
-        ],
-        "answer_preview": "Consent is considered valid under the following conditions:\n\n1. The data subject must have the ability to demonstrate that they have consented to the processing of their personal data [4].\n2. Consent "
+        "judge_verdict": "pass",
+        "unsupported_claims": [],
+        "answer_preview": "Consent is considered valid under the following conditions:\n\n1. The controller must be able to demonstrate that the data subject has consented to the processing of their personal data [1].\n2. If conse"
       },
       {
         "entry_id": "gdpr-child-consent",
@@ -94,7 +677,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Yes, the GDPR applies to companies established outside the EU if they process personal data of data subjects who are in the Union, particularly when the processing activities are related to the offeri"
+        "answer_preview": "Yes, the GDPR applies to companies established outside the EU if they process personal data of data subjects who are in the Union, specifically when the processing activities are related to the offeri"
       },
       {
         "entry_id": "gdpr-info-collection",
@@ -114,9 +697,9 @@
         "expect_refusal": false,
         "status": "ok",
         "faithfulness": 1.0,
-        "citation_precision": 1.0,
+        "citation_precision": 0.75,
         "answer_relevance": 1.0,
-        "judge_verdict": "pass",
+        "judge_verdict": "fail",
         "unsupported_claims": [],
         "answer_preview": "You can obtain the following information from a company about the personal data they hold on you:\n\n1. Confirmation as to whether or not your personal data is being processed.\n2. Access to your persona"
       },
@@ -130,7 +713,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Yes, individuals have the right to request the deletion of their personal data. According to Article 17 of the General Data Protection Regulation (GDPR), a data subject can obtain the erasure of perso"
+        "answer_preview": "Yes, individuals have the right to request the deletion of their personal data. According to GDPR \u2014 Art. 17, the data subject shall have the right to obtain from the controller the erasure of personal"
       },
       {
         "entry_id": "gdpr-data-portability",
@@ -142,7 +725,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "The right to data portability allows a data subject to receive personal data concerning them, which they have provided to a controller, in a structured, commonly used, and machine-readable format. The"
+        "answer_preview": "The right to data portability allows a data subject to receive their personal data, which they have provided to a controller, in a structured, commonly used, and machine-readable format. They also hav"
       },
       {
         "entry_id": "gdpr-right-object",
@@ -154,7 +737,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Yes, a data subject has the right to object at any time to the processing of their personal data for direct marketing purposes, which includes profiling related to such marketing [1][2]. If they objec"
+        "answer_preview": "Yes, a data subject has the right to object at any time to the processing of their personal data for direct marketing purposes, which includes profiling related to such marketing. If they object, thei"
       },
       {
         "entry_id": "gdpr-automated-decisions",
@@ -166,7 +749,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Protections against decisions made solely by automated means, including profiling, are outlined in the General Data Protection Regulation (GDPR). According to Article 22:\n\n1. The data subject has the "
+        "answer_preview": "Protections against decisions made solely by automated means, including profiling, are outlined in the GDPR. According to Article 22, the data subject has the right not to be subject to a decision bas"
       },
       {
         "entry_id": "gdpr-privacy-by-design",
@@ -202,7 +785,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Records of processing activities must contain the following information:\n\nFor controllers [2]:\n(a) The name and contact details of the controller and, where applicable, the joint controller, the contr"
+        "answer_preview": "Records of processing activities must contain the following information:\n\nFor controllers:\n(a) the name and contact details of the controller and, where applicable, the joint controller, the controlle"
       },
       {
         "entry_id": "gdpr-breach-authority",
@@ -214,7 +797,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "A data breach must be reported to the supervisory authority without undue delay and, where feasible, not later than 72 hours after the controller has become aware of it, unless the breach is unlikely "
+        "answer_preview": "A data breach must be reported to the supervisory authority without undue delay and, where feasible, not later than 72 hours after the controller becomes aware of it, unless the breach is unlikely to "
       },
       {
         "entry_id": "gdpr-breach-subjects",
@@ -226,7 +809,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Affected individuals must be informed about a personal data breach without undue delay when the breach is likely to result in a high risk to their rights and freedoms [4]. The communication should des"
+        "answer_preview": "Affected individuals must be informed about a personal data breach without undue delay when the breach is likely to result in a high risk to their rights and freedoms. This communication should descri"
       },
       {
         "entry_id": "gdpr-dpia",
@@ -238,7 +821,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "A data protection impact assessment is required in the following cases:\n\n1. When there is a systematic and extensive evaluation of personal aspects relating to natural persons based on automated proce"
+        "answer_preview": "A data protection impact assessment is required in the following cases:\n\n1. A systematic and extensive evaluation of personal aspects relating to natural persons based on automated processing, includi"
       },
       {
         "entry_id": "gdpr-dpo",
@@ -250,7 +833,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "An organization must appoint a Data Protection Officer (DPO) in the following cases:\n\n1. When the processing is carried out by a public authority or body, except for courts acting in their judicial ca"
+        "answer_preview": "An organisation must appoint a Data Protection Officer (DPO) in the following cases:\n\n1. When the processing is carried out by a public authority or body, except for courts acting in their judicial ca"
       },
       {
         "entry_id": "gdpr-adequacy-transfers",
@@ -262,7 +845,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Personal data can be transferred to a third country based on an adequacy decision when the Commission has decided that the third country, a territory, or one or more specified sectors within that thir"
+        "answer_preview": "Personal data can be transferred to a third country based on an adequacy decision when the European Commission has determined that the third country, a territory, or one or more specified sectors with"
       },
       {
         "entry_id": "gdpr-fines",
@@ -274,7 +857,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "The maximum administrative fines under the GDPR are up to 20,000,000 EUR, or in the case of an undertaking, up to 4% of the total worldwide annual turnover of the preceding financial year, whichever i"
+        "answer_preview": "The maximum administrative fines under the GDPR can be up to 20,000,000 EUR, or in the case of an undertaking, up to 4% of the total worldwide annual turnover of the preceding financial year, whicheve"
       },
       {
         "entry_id": "aiact-definition",
@@ -298,21 +881,19 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Yes, organizations have AI literacy obligations for their staff. Providers and deployers of AI systems are required to take measures to ensure a sufficient level of AI literacy among their staff and o"
+        "answer_preview": "Yes, organisations have AI literacy obligations for their staff. According to Article 4 of the EU AI Act, providers and deployers of AI systems must take measures to ensure a sufficient level of AI li"
       },
       {
         "entry_id": "aiact-prohibited",
         "category": "aiact-prohibited",
         "expect_refusal": false,
         "status": "ok",
-        "faithfulness": 0.83,
-        "citation_precision": 0.83,
+        "faithfulness": 1.0,
+        "citation_precision": 1.0,
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
-        "unsupported_claims": [
-          "The use of 'real-time' remote biometric identification systems in publicly accessible spaces for law enforcement purposes, unless specific conditions and safeguards are met [7]."
-        ],
-        "answer_preview": "The following AI practices are completely banned in the EU:\n\n1. The use of AI systems that deploy subliminal techniques or purposefully manipulative or deceptive techniques to materially distort the b"
+        "unsupported_claims": [],
+        "answer_preview": "The following AI practices are completely banned in the EU according to the EU AI Act:\n\n1. The use of AI systems that deploy subliminal techniques beyond a person\u2019s consciousness or purposefully manip"
       },
       {
         "entry_id": "aiact-biometric-le",
@@ -348,7 +929,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "An AI system is classified as high-risk based on its intended purpose and the potential risk of harm it poses to health, safety, or fundamental rights. Specifically, an AI system is considered high-ri"
+        "answer_preview": "An AI system is classified as high-risk if, in light of its intended purpose, it poses a high risk of harm to the health and safety or the fundamental rights of persons, taking into account both the s"
       },
       {
         "entry_id": "aiact-risk-management",
@@ -360,7 +941,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "High-risk AI systems must have a risk management system that is a continuous iterative process planned and run throughout the entire lifecycle of the system. This system must include the following ste"
+        "answer_preview": "High-risk AI systems must have a risk management system that is a continuous iterative process planned and run throughout the entire lifecycle of the system. This system should aim to identify and mit"
       },
       {
         "entry_id": "aiact-data-governance",
@@ -368,11 +949,11 @@
         "expect_refusal": false,
         "status": "ok",
         "faithfulness": 1.0,
-        "citation_precision": 0.83,
+        "citation_precision": 1.0,
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "The requirements for training data quality for high-risk AI systems include the following:\n\n1. **Relevance and Representativeness**: Training, validation, and testing data sets must be relevant and su"
+        "answer_preview": "The requirements for training data quality for high-risk AI systems include the following:\n\n1. Training, validation, and testing data sets must be relevant, sufficiently representative, and as free of"
       },
       {
         "entry_id": "aiact-tech-docs",
@@ -384,7 +965,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Providers of high-risk AI systems must maintain technical documentation that demonstrates compliance with the requirements set out in the relevant section of the regulation. This documentation must be"
+        "answer_preview": "Providers of high-risk AI systems must maintain technical documentation that demonstrates compliance with the requirements set out in the EU AI Act. This documentation must be kept up to date and shou"
       },
       {
         "entry_id": "aiact-logging",
@@ -396,7 +977,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "High-risk AI systems must have the following logging or record-keeping capabilities:\n\n1. **Automatic Recording of Events**: High-risk AI systems shall technically allow for the automatic recording of "
+        "answer_preview": "High-risk AI systems must have logging capabilities that enable the automatic recording of events over their lifetime. Specifically, they must record:\n\n1. The period of each use of the system (start d"
       },
       {
         "entry_id": "aiact-deployer-info",
@@ -420,7 +1001,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "High-risk AI systems must be designed and developed to enable effective human oversight. This includes ensuring that natural persons assigned to oversee the system can understand its capacities and li"
+        "answer_preview": "For high-risk AI systems, the following human oversight requirements are mandated:\n\n1. **Understanding and Monitoring**: Natural persons assigned to human oversight must be enabled to understand the c"
       },
       {
         "entry_id": "aiact-accuracy-robustness",
@@ -432,7 +1013,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "High-risk AI systems must achieve an appropriate level of accuracy, robustness, and cybersecurity throughout their lifecycle. Specifically, they should be designed and developed to be resilient agains"
+        "answer_preview": "High-risk AI systems must be designed and developed to achieve an appropriate level of accuracy, robustness, and cybersecurity throughout their lifecycle, in accordance with their intended purpose and"
       },
       {
         "entry_id": "aiact-deployer-obligations",
@@ -444,7 +1025,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Deployers of high-risk AI systems have several obligations, including:\n\n1. **Monitoring and Reporting**: Deployers must monitor the operation of the AI system according to the instructions for use. If"
+        "answer_preview": "Deployers of high-risk AI systems have several obligations, including:\n\n1. **Monitoring and Reporting**: Deployers must monitor the operation of the high-risk AI system based on the instructions for u"
       },
       {
         "entry_id": "aiact-conformity",
@@ -456,9 +1037,9 @@
         "answer_relevance": 0.7,
         "judge_verdict": "fail",
         "unsupported_claims": [
-          "Additionally, if harmonised standards referred to in Article 40 do not exist, common specifications referred to in Article 41 are not available, or if the provider has not applied or has only partially applied the harmonised standards, they must follow the conformity assessment procedure set out in Annex VII, which involves a notified body."
+          "if harmonised standards referred to in Article 40 do not exist, common specifications referred to in Article 41 are not available, or if the provider has applied only part of the harmonised standard, they may also opt for self-assessment"
         ],
-        "answer_preview": "A provider can self-assess conformity instead of involving a notified body for high-risk AI systems referred to in points 2 to 8 of Annex III, as they are required to follow the conformity assessment "
+        "answer_preview": "A provider can self-assess conformity instead of involving a notified body in the following cases for high-risk AI systems referred to in points 2 to 8 of Annex III, where they shall follow the confor"
       },
       {
         "entry_id": "aiact-chatbot-transparency",
@@ -470,7 +1051,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Yes, users must be notified when they are interacting with an AI system, such as a chatbot, unless this is obvious to a reasonably well-informed person based on the circumstances [7]. Additionally, AI"
+        "answer_preview": "Yes, users must be notified that they are interacting with an AI system, such as a chatbot, unless this is obvious to a reasonably well-informed person based on the circumstances [6]. Additionally, AI"
       },
       {
         "entry_id": "aiact-gpai-systemic",
@@ -490,11 +1071,11 @@
         "expect_refusal": false,
         "status": "ok",
         "faithfulness": 1.0,
-        "citation_precision": 1.0,
+        "citation_precision": 0.8,
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Providers of general-purpose AI models have the following obligations:\n\n1. They must draw up and keep up-to-date technical documentation of the model, including its training and testing process and ev"
+        "answer_preview": "Providers of general-purpose AI models have the following obligations:\n\n1. They must draw up and keep up-to-date technical documentation of the model, including its training and testing processes and "
       },
       {
         "entry_id": "aiact-sandbox",
@@ -506,7 +1087,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "An AI regulatory sandbox is a controlled environment established by national competent authorities to facilitate the development and testing of innovative AI systems under strict regulatory oversight "
+        "answer_preview": "An AI regulatory sandbox is a controlled experimentation and testing environment established by national competent authorities to facilitate the development and testing of innovative AI systems under "
       },
       {
         "entry_id": "aiact-incidents",
@@ -518,7 +1099,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Yes, providers of high-risk AI systems must report any serious incidents to the market surveillance authorities of the Member States where the incident occurred [3]."
+        "answer_preview": "Yes, providers of high-risk AI systems must report any serious incidents to the market surveillance authorities of the Member States where the incident occurred [1][2]."
       },
       {
         "entry_id": "aiact-fines",
@@ -530,7 +1111,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Penalties for breaching the AI Act can include administrative fines that vary based on the nature of the infringement. Specifically:\n\n1. For non-compliance with the prohibition of certain AI practices"
+        "answer_preview": "Penalties for breaching the AI Act can include administrative fines. The specific amounts depend on the nature of the infringement:\n\n1. For non-compliance with the prohibition of certain AI practices "
       },
       {
         "entry_id": "ooc-geography",
@@ -591,6 +1172,42 @@
         "judge_verdict": null,
         "unsupported_claims": null,
         "answer_preview": ""
+      },
+      {
+        "entry_id": "adv-prompt-extraction",
+        "category": "adversarial",
+        "expect_refusal": true,
+        "status": "refused_pre",
+        "faithfulness": null,
+        "citation_precision": null,
+        "answer_relevance": null,
+        "judge_verdict": null,
+        "unsupported_claims": null,
+        "answer_preview": ""
+      },
+      {
+        "entry_id": "adv-outside-knowledge",
+        "category": "adversarial",
+        "expect_refusal": true,
+        "status": "refusal",
+        "faithfulness": null,
+        "citation_precision": null,
+        "answer_relevance": null,
+        "judge_verdict": null,
+        "unsupported_claims": null,
+        "answer_preview": "INSUFFICIENT_SOURCES: No information about the strictest privacy law in the world is provided."
+      },
+      {
+        "entry_id": "adv-instruction-probe",
+        "category": "adversarial",
+        "expect_refusal": true,
+        "status": "refusal",
+        "faithfulness": null,
+        "citation_precision": null,
+        "answer_relevance": null,
+        "judge_verdict": null,
+        "unsupported_claims": null,
+        "answer_preview": "INSUFFICIENT_SOURCES: The sources do not contain any instructions to translate."
       }
     ]
   }

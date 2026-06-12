@@ -19,6 +19,56 @@ from app.rag.retrieval.hybrid import RetrievedChunk
 
 REFUSAL_PREFIX = "INSUFFICIENT_SOURCES:"
 
+# Short labels keep prompts compact; chunks carry the full regulation title
+# in their embedded header, which we strip for generation.
+CORPUS_LABELS = {"ai-act": "EU AI Act", "gdpr": "GDPR"}
+
+_EMBEDDED_HEADER = re.compile(r"^\[[^\]]*\]\n?")
+
+
+@dataclass
+class GroupedSource:
+    """One source block per legal provision, merging its retrieved chunks.
+
+    Retrieval returns paragraph-level chunks, several of which often belong to
+    the same article. Grouping them: (a) cuts prompt tokens — one short header
+    instead of N long embedded ones — and (b) gives the model and the UI
+    citation units that match how lawyers cite ("Art. 6"), with zero content
+    loss.
+    """
+
+    ref: str
+    corpus_slug: str
+    title: str
+    body: str  # paragraph texts only, for display
+    text: str  # header + body, for the prompt
+    score: float
+
+
+def group_sources(chunks: list[RetrievedChunk]) -> list[GroupedSource]:
+    grouped: dict[tuple[str, str], list[RetrievedChunk]] = {}
+    for chunk in chunks:
+        grouped.setdefault((chunk.corpus_slug, chunk.ref), []).append(chunk)
+
+    sources: list[GroupedSource] = []
+    for (slug, ref), members in grouped.items():
+        label = CORPUS_LABELS.get(slug, slug)
+        title = members[0].document_title
+        header = f"{label} — {ref}" + (f": {title}" if title else "")
+        body = "\n".join(_EMBEDDED_HEADER.sub("", m.text).strip() for m in members)
+        sources.append(
+            GroupedSource(
+                ref=ref,
+                corpus_slug=slug,
+                title=title,
+                body=body,
+                text=f"{header}\n{body}",
+                score=max(m.score for m in members),
+            )
+        )
+    return sources
+
+
 SYSTEM_PROMPT = f"""You are RegLens, a compliance research assistant answering questions about \
 EU regulations (the AI Act and the GDPR) strictly from the numbered SOURCE blocks provided.
 
@@ -35,7 +85,7 @@ application displays one.
 Answer concisely and precisely, in the language of the question."""
 
 
-def build_messages(question: str, sources: list[RetrievedChunk]) -> list[dict[str, str]]:
+def build_messages(question: str, sources: list[GroupedSource]) -> list[dict[str, str]]:
     blocks = "\n\n".join(
         f"<source id={i}>\n{s.text}\n</source>" for i, s in enumerate(sources, start=1)
     )

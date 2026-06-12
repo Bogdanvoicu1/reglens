@@ -16,7 +16,7 @@ from app.db.models import Conversation, Message
 from app.db.session import get_session
 from app.observability.rag_metrics import CACHE_EVENTS, RETRIEVAL_TOP_SCORE, record_chat
 from app.observability.tracing import ChatTrace
-from app.rag.generation.grounded import build_messages, validate_answer
+from app.rag.generation.grounded import build_messages, group_sources, validate_answer
 from app.rag.retrieval.hybrid import retrieve
 from app.services.answer_cache import (
     cache_key,
@@ -24,6 +24,7 @@ from app.services.answer_cache import (
     get_cached_answer,
     set_cached_answer,
 )
+from app.services.embedding_cache import embed_query_cached
 from app.services.embeddings import EmbeddingClient
 from app.services.llm import ChatClient
 from app.services.rate_limit import rate_limited_user
@@ -123,7 +124,7 @@ async def _chat_stream(
         llm = ChatClient()
         try:
             retrieval_span = trace.retrieval(req.question)
-            query_embedding = (await embedder.embed([req.question]))[0]
+            query_embedding = await embed_query_cached(embedder, req.question)
             sources = await retrieve(
                 session,
                 req.question,
@@ -136,6 +137,7 @@ async def _chat_stream(
             )
             if sources:
                 RETRIEVAL_TOP_SCORE.observe(sources[0].score)
+            grouped = group_sources(sources)
 
             if not sources or sources[0].score < MIN_TOP_SCORE:
                 record_chat("refused_pre", time.perf_counter() - start)
@@ -150,15 +152,15 @@ async def _chat_stream(
                 {
                     "id": i,
                     "ref": s.ref,
-                    "title": s.document_title,
+                    "title": s.title,
                     "corpus": s.corpus_slug,
-                    "text": s.text,
+                    "text": s.body,
                 }
-                for i, s in enumerate(sources, start=1)
+                for i, s in enumerate(grouped, start=1)
             ]
             yield _sse("sources", {"sources": source_payload})
 
-            prompt_messages = build_messages(req.question, sources)
+            prompt_messages = build_messages(req.question, grouped)
             generation = trace.generation(get_settings().generation_model, prompt_messages)
             result = None
             async for token, result in llm.stream(  # noqa: B007 — result accumulates state
@@ -167,7 +169,7 @@ async def _chat_stream(
                 yield _sse("token", {"token": token})
 
             full_text = result.text if result else ""
-            validation = validate_answer(full_text, len(sources))
+            validation = validate_answer(full_text, len(grouped))
             latency_ms = round((time.perf_counter() - start) * 1000)
             usage = result.usage if result else {}
             generation.end(full_text, usage)
