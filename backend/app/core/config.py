@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     embedding_dim: int = 1536
     generation_model: str = "openai/gpt-4o-mini"
     judge_model: str = "openai/gpt-4o"
+    # Hard cap on completion length: bounds cost per request and limits damage
+    # from runaway generations. Cited answers fit comfortably under this.
+    generation_max_tokens: int = 1024
+    # When false, user questions are logged/traced as a hash, not plaintext.
+    log_question_text: bool = False
 
     # Rate limiting defaults (requests per minute per tenant)
     rate_limit_rpm: int = 30

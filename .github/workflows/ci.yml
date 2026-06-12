@@ -63,3 +63,20 @@ jobs:
       - run: npx tsc -b
       - run: npx vitest run
       - run: npm run build
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+        working-directory: backend
+      - name: Audit backend dependencies
+        run: uv run pip-audit --skip-editable
+        working-directory: backend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+        working-directory: frontend

@@ -22,11 +22,12 @@ class StreamResult:
 
 
 class ChatClient:
-    def __init__(self) -> None:
+    def __init__(self, model: str | None = None) -> None:
         settings = get_settings()
         if not settings.llm_api_key:
             raise LLMError("REGLENS_LLM_API_KEY is not set")
-        self._model = settings.generation_model
+        self._model = model or settings.generation_model
+        self._max_tokens = settings.generation_max_tokens
         self._client = httpx.AsyncClient(
             base_url=settings.llm_base_url,
             headers={"Authorization": f"Bearer {settings.llm_api_key}"},
@@ -42,6 +43,7 @@ class ChatClient:
             "model": self._model,
             "messages": messages,
             "temperature": temperature,
+            "max_tokens": self._max_tokens,
             "stream": True,
             "stream_options": {"include_usage": True},
         }

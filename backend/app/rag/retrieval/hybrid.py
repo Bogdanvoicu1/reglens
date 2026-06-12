@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Chunk, Corpus, Document
+from app.observability.redaction import loggable_question
 
 log = structlog.get_logger()
 
@@ -125,7 +126,7 @@ async def retrieve(
     results = [by_id[i] for i in top_ids if i in by_id]
     log.info(
         "retrieval",
-        query=query[:120],
+        query=loggable_question(query),
         vector_hits=len(vector_ids),
         fts_hits=len(fts_ids),
         returned=len(results),

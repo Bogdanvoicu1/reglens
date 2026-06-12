@@ -13,6 +13,7 @@ from typing import Any
 import structlog
 
 from app.core.config import get_settings
+from app.observability.redaction import loggable_question
 
 log = structlog.get_logger()
 
@@ -43,7 +44,7 @@ class ChatTrace:
         self._trace = (
             client.trace(
                 name="chat",
-                input={"question": question},
+                input={"question": loggable_question(question)},
                 user_id=user_id,
                 metadata={"tenant_id": tenant_id},
             )
@@ -53,15 +54,16 @@ class ChatTrace:
 
     def retrieval(self, query: str) -> "_Span":
         return _Span(
-            self._trace.span(name="retrieval", input={"query": query}) if self._trace else None
-        )
-
-    def generation(self, model: str, messages: list[dict]) -> "_Generation":
-        return _Generation(
-            self._trace.generation(name="generation", model=model, input=messages)
+            self._trace.span(name="retrieval", input={"query": loggable_question(query)})
             if self._trace
             else None
         )
+
+    def generation(self, model: str, messages: list[dict]) -> "_Generation":
+        if not self._trace:
+            return _Generation(None)
+        prompt = messages if get_settings().log_question_text else {"redacted": True}
+        return _Generation(self._trace.generation(name="generation", model=model, input=prompt))
 
     def end(self, output: dict) -> None:
         if self._trace:

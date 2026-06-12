@@ -15,9 +15,9 @@ def _entry(refs: list[str], require: str = "any") -> EvalEntry:
 class TestDataset:
     def test_golden_dataset_is_valid(self):
         ds = load_dataset()
-        assert ds.version == "v1"
+        assert ds.version == "v2"
         assert len(ds.answerable) >= 30
-        assert len(ds.refusals) >= 3
+        assert len(ds.refusals) >= 8  # incl. red-team: extraction, injection, outside-knowledge
         valid_corpora = {"gdpr", "ai-act"}
         assert all(e.corpus in valid_corpora for entry in ds.answerable for e in entry.expected)
 

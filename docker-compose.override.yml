@@ -1,0 +1,11 @@
+# Development overrides — merged automatically by `docker compose up`.
+# Publishes Postgres/Redis to the host so the locally-run API, tests, and
+# ingestion CLI can reach them. Production deploys use the base file only:
+#   docker compose -f docker-compose.yml up -d
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+  redis:
+    ports:
+      - "6379:6379"

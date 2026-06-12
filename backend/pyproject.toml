@@ -30,6 +30,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "aiosqlite>=0.20",
+    "pip-audit>=2.10.1",
 ]
 
 [build-system]
