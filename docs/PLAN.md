@@ -89,3 +89,21 @@ Errors: RFC 7807 problem+json. Rate limits: 429 + `Retry-After`.
   for sub-100ms retrieval at this corpus size.
 - Caching: normalized-query answer cache keyed by (corpus_version, query
   hash); embedding cache to avoid re-embedding repeated queries.
+
+## Roadmap — v2 (post-M7)
+
+The next flagship capability is the **Compliance Assessment Agent**: a typed,
+staged agent that turns a user's system description into a grounded readiness
+report (classification, obligations, gap analysis, remediation roadmap) with
+per-rule evals and hard safety gates. Full design and milestone plan (A0–A5):
+[ASSESSMENT_AGENT.md](ASSESSMENT_AGENT.md).
+
+Status: **A0 — Foundations done** (annex parsing + re-ingest, golden dataset
+v3 with annex gates, rulebook v1 with validated schema, 25-scenario
+assessment dataset with full per-rule coverage, assessment tables migration).
+**A1 — Engine core done** (profile extraction + wave/group-batched rulebook
+classification, persistence-first SSE API, CLI runner with scenario diff;
+live-verified 57/57 expected verdicts across 4 scenarios incl. blocker
+detection, ≈$0.01 per assessment).
+Next: A2 — full pipeline (obligation mapping, gap analysis, remediation,
+report assembly, clarification round).

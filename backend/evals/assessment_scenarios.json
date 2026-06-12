@@ -1,0 +1,385 @@
+{
+  "version": "v1",
+  "scenarios": [
+    {
+      "id": "cv-screening-saas",
+      "title": "B2B CV screening SaaS (vendor perspective)",
+      "description": "We are TalentRank, a Berlin-based B2B SaaS. Our machine-learning model parses CVs and ranks job applicants for EU employers; recruiters see ranked shortlists with match scores and make every interview and rejection decision themselves. We host exclusively on AWS eu-central-1 and process applicant data strictly on each employer's documented instructions — never for our own purposes. The system evaluates only job-relevant qualifications: it generates no content, infers no emotions, and produces no scores about anyone's social behaviour outside the hiring context.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-eu-market": "applies",
+        "aia-role-provider": "applies",
+        "aia-role-deployer": "does_not_apply",
+        "aia-high-risk-annex3": "applies",
+        "aia-art6-derogation": "does_not_apply",
+        "aia-prohibited-emotion-workplace": "does_not_apply",
+        "aia-prohibited-social-scoring": "does_not_apply",
+        "aia-prohibited-predictive-policing": "does_not_apply",
+        "aia-transparency-synthetic": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "does_not_apply",
+        "gdpr-role-processor": "applies",
+        "gdpr-lawful-basis": "does_not_apply",
+        "gdpr-automated-decisions": "does_not_apply",
+        "gdpr-dpia-required": "applies",
+        "gdpr-transfers": "does_not_apply"
+      }
+    },
+    {
+      "id": "workplace-emotion-monitor",
+      "title": "Employee emotion analytics for managers",
+      "description": "EngageSense sells EU companies a workplace analytics suite: webcams at desks and in meeting rooms feed a model that infers each employee's emotional state — frustration, enthusiasm, stress — and aggregates it into team engagement scores shown to managers. It is positioned for HR performance management, explicitly not for any medical or safety purpose. We develop the system and sell it under our own brand. Employee video is processed continuously during working hours across entire offices.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-emotion-workplace": "applies",
+        "aia-prohibited-social-scoring": "does_not_apply",
+        "aia-transparency-emotion-biometric": "does_not_apply",
+        "aia-role-provider": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-dpia-required": "applies"
+      }
+    },
+    {
+      "id": "recipe-chatbot",
+      "title": "Consumer recipe chatbot",
+      "description": "CookBuddy is a consumer cooking assistant for EU home cooks, built on a third-party LLM API. Users chat with 'Chef Clara', a friendly persona that discusses recipes, substitutions and meal plans; we store each user's email address and saved favourites. It is a general-audience product not directed at children, holds no health profiles, makes no decisions about users, and everything — including the model endpoint — is hosted in the EU. Free tier plus a paid subscription we operate for our own purposes.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-eu-market": "applies",
+        "aia-transparency-interaction": "applies",
+        "aia-prohibited-subliminal": "does_not_apply",
+        "aia-prohibited-vulnerabilities": "does_not_apply",
+        "aia-prohibited-social-scoring": "does_not_apply",
+        "aia-prohibited-predictive-policing": "does_not_apply",
+        "aia-prohibited-face-scraping": "does_not_apply",
+        "aia-prohibited-emotion-workplace": "does_not_apply",
+        "aia-prohibited-biometric-categorisation": "does_not_apply",
+        "aia-prohibited-rbi-le": "does_not_apply",
+        "aia-high-risk-annex3": "does_not_apply",
+        "aia-high-risk-product-safety": "does_not_apply",
+        "aia-gpai-provider": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-lawful-basis": "applies",
+        "gdpr-special-categories": "does_not_apply",
+        "gdpr-children": "does_not_apply",
+        "gdpr-automated-decisions": "does_not_apply",
+        "gdpr-dpia-required": "does_not_apply",
+        "gdpr-dpo-required": "does_not_apply",
+        "gdpr-transfers": "does_not_apply"
+      }
+    },
+    {
+      "id": "credit-scoring-engine",
+      "title": "Fully automated consumer credit decisions",
+      "description": "LendFast, based in Madrid, develops and operates an automated credit decision engine for our own consumer lending product. Loan applications below 5,000 EUR are approved or declined entirely automatically from income, employment and repayment-history data, with legal effect on the applicant and no manual review. We determine all purposes and means, run analytics workloads in a US cloud region, and notify applicants that decisions are automated. We process only identity and financial data — no health or other special-category data — and the score reflects creditworthiness, not social behaviour in unrelated contexts.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-role-provider": "applies",
+        "aia-high-risk-annex3": "applies",
+        "aia-art6-derogation": "does_not_apply",
+        "aia-prohibited-social-scoring": "does_not_apply",
+        "aia-transparency-synthetic": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-role-processor": "does_not_apply",
+        "gdpr-lawful-basis": "applies",
+        "gdpr-special-categories": "does_not_apply",
+        "gdpr-automated-decisions": "applies",
+        "gdpr-dpia-required": "applies",
+        "gdpr-transfers": "applies"
+      }
+    },
+    {
+      "id": "non-ai-invoicing-saas",
+      "title": "Rule-based invoicing SaaS (no AI)",
+      "description": "InvoiceFlow is a Dutch invoicing SaaS for freelancers. It generates PDF invoices from fixed templates and tracks payment status using simple if-then reminder rules that users configure themselves — there is no machine learning, no statistical inference and no generative functionality anywhere in the product. We store customer names, email addresses and bank details for our own product purposes, hosted entirely in the EU. It is an adults-only business tool and humans make every decision it supports.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-lawful-basis": "applies",
+        "gdpr-special-categories": "does_not_apply",
+        "gdpr-children": "does_not_apply",
+        "gdpr-automated-decisions": "does_not_apply",
+        "gdpr-dpia-required": "does_not_apply",
+        "gdpr-dpo-required": "does_not_apply",
+        "gdpr-transfers": "does_not_apply"
+      }
+    },
+    {
+      "id": "municipal-civic-score",
+      "title": "City-wide civic reliability scoring",
+      "description": "Our city IT department built CivicTrust, a pilot that aggregates resident data across unrelated municipal services — transit fare evasion, library fines, noise complaints, waste-sorting violations — into a single machine-learned 'civic reliability score'. Residents with low scores are deprioritised for subsidised housing and residential parking permits, contexts unrelated to where the data was generated. We are a public authority, we built the system in-house and put it into service under our own name, and we determine every purpose of the processing. It predicts general trustworthiness, not criminal offences.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-social-scoring": "applies",
+        "aia-prohibited-predictive-policing": "does_not_apply",
+        "aia-role-provider": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-dpia-required": "applies",
+        "gdpr-dpo-required": "applies"
+      }
+    },
+    {
+      "id": "reoffending-risk-scores",
+      "title": "Individual reoffending prediction for police",
+      "description": "PreCrime Analytics sells regional EU police forces a model that scores named individuals on their likelihood of committing future offences. Scores derive from personality assessments, neighbourhood statistics, age and social contacts — profiling and trait analysis, not objective evidence about a specific suspected act. Officers receive ranked watchlists of people to monitor. We develop the system and sell it to forces under our own brand.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-predictive-policing": "applies",
+        "aia-role-provider": "applies",
+        "aia-high-risk-annex3": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-dpia-required": "applies"
+      }
+    },
+    {
+      "id": "face-scrape-search",
+      "title": "Untargeted face scraping for a search database",
+      "description": "FaceFind builds a face-search engine: our crawlers download facial images untargeted from public websites, social media and video platforms, compute biometric embeddings, and let paying customers match an uploaded photo against the resulting database of roughly 800 million face templates. Biometric identification of people at scale is our entire core business. We operate from the EU and determine all purposes of this processing ourselves.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-face-scraping": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-special-categories": "applies",
+        "gdpr-dpia-required": "applies",
+        "gdpr-dpo-required": "applies"
+      }
+    },
+    {
+      "id": "subliminal-checkout-nudges",
+      "title": "Below-awareness purchase manipulation",
+      "description": "BuyMore provides EU e-commerce sites a 'conversion maximiser': during checkout it inserts visual cues flashed below conscious perception thresholds and AI-personalised urgency messaging engineered to bypass deliberate decision-making and trigger impulse purchases. Internal testing shows users buy significantly more than they intended, and we have documented overspending complaints. It targets the general shopping population — we do not single out users by age, disability or financial distress. Our customer sites determine nothing; we run the engine for them as a managed feature we designed.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-subliminal": "applies",
+        "aia-prohibited-vulnerabilities": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-dpia-required": "applies"
+      }
+    },
+    {
+      "id": "elder-targeting-voicebot",
+      "title": "Voice sales bot exploiting age-related decline",
+      "description": "SilverSell offers EU telemarketing firms an outbound AI voice agent that sounds fully human and does not announce it is artificial. It is tuned for retirees: the model detects hesitation and confusion patterns typical of age-related cognitive decline and escalates tailored persuasion scripts at exactly those moments to close subscription sales the person would otherwise refuse. Several customers' end-clients have reported pensioners signing up for contracts they did not understand, with documented financial harm. We build and brand the system ourselves.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-vulnerabilities": "applies",
+        "aia-transparency-interaction": "applies",
+        "aia-role-provider": "applies",
+        "gdpr-applies": "applies"
+      }
+    },
+    {
+      "id": "face-trait-adtech",
+      "title": "Inferring political views and orientation from faces",
+      "description": "AdPersona's API takes a face photo from a client's own user database and returns inferred political leaning and sexual orientation derived from facial biometric features, so advertisers can micro-target segments. We never scrape or collect images ourselves — clients upload photos of their own users and we process them strictly on the client's documented instructions. Our customers are EU adtech platforms.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-biometric-categorisation": "applies",
+        "aia-prohibited-face-scraping": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-processor": "applies",
+        "gdpr-special-categories": "applies",
+        "gdpr-dpia-required": "applies"
+      }
+    },
+    {
+      "id": "stadium-live-face-id",
+      "title": "Continuous real-time face ID for police watchlists",
+      "description": "WatchGate sells stadium and transit-hub operators working with national police a live CCTV face-recognition layer: every entrant's face is captured and matched in real time against police watchlists for general crime prevention. Operation is continuous across all entrances — it is not limited to targeted searches for specific victims, imminent terrorist threats, or court-authorised suspects of listed serious offences. We develop and brand the system ourselves for EU deployments in publicly accessible spaces.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-rbi-le": "applies",
+        "aia-role-provider": "applies",
+        "aia-high-risk-annex3": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-special-categories": "applies",
+        "gdpr-dpia-required": "applies"
+      }
+    },
+    {
+      "id": "driver-drowsiness-module",
+      "title": "In-cabin drowsiness detection safety component",
+      "description": "AutoSense supplies European carmakers an in-cabin camera module that detects driver drowsiness and micro-sleep episodes from eyelid closure and head movement, triggering alerts and automated lane-keeping handover. It ships as a safety component in vehicles type-approved under EU vehicle legislation, with third-party conformity assessment. Detection exists strictly for road-safety intervention: the module does not assess mood or emotions for any other purpose, processes video on-device only, and stores nothing off-vehicle. We develop it and sell it under our own name.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-high-risk-product-safety": "applies",
+        "aia-prohibited-emotion-workplace": "does_not_apply",
+        "aia-role-provider": "applies",
+        "gdpr-applies": "applies"
+      }
+    },
+    {
+      "id": "radiology-triage-device",
+      "title": "Medical device software for scan triage",
+      "description": "MedSort is CE-marked Class IIb medical device software: it analyses radiology scans in EU hospitals and flags suspected critical findings so radiologists read those studies first. A notified body performs conformity assessment under the Medical Device Regulation. We develop the product and sell it under our own name; patient scans are processed on EU servers strictly under hospital data-processing agreements, and our core business is processing large volumes of health imaging daily. Radiologists review every flagged scan — the software decides nothing on its own.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-high-risk-product-safety": "applies",
+        "aia-role-provider": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-role-processor": "applies",
+        "gdpr-role-controller": "does_not_apply",
+        "gdpr-special-categories": "applies",
+        "gdpr-automated-decisions": "does_not_apply",
+        "gdpr-dpia-required": "applies",
+        "gdpr-dpo-required": "applies"
+      }
+    },
+    {
+      "id": "frontier-foundation-model",
+      "title": "Frontier multimodal foundation model via API",
+      "description": "DeepEU trains and releases LumenLM, a multimodal foundation model offered across the EU via API and a public web playground. Training compute for the current version exceeded 3x10^25 floating-point operations. The model generates text and images for arbitrary tasks; enterprise customers build their own products on top of it. Training data includes large-scale web crawls that contain personal data, which we process for our own model-development purposes under a documented legitimate-interests analysis.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-gpai-provider": "applies",
+        "aia-gpai-systemic": "applies",
+        "aia-transparency-synthetic": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-lawful-basis": "applies"
+      }
+    },
+    {
+      "id": "small-open-weights-model",
+      "title": "7B open-weights general assistant model",
+      "description": "TinyForge fine-tunes a 7-billion-parameter open-weights general-purpose assistant model and publishes the weights on a public model hub under a permissive licence for anyone to download. The model handles a wide range of tasks — chat, summarisation, coding help. Total training compute is around 10^22 floating-point operations, orders of magnitude below frontier scale, and we have received no designation from any authority. We run no hosted inference service; integrators deploy the weights themselves.",
+      "expected_verdicts": {
+        "aia-gpai-provider": "applies",
+        "aia-gpai-systemic": "does_not_apply"
+      }
+    },
+    {
+      "id": "marketing-image-generator",
+      "title": "Self-serve marketing image generation tool",
+      "description": "Brandify generates marketing images — product shots, abstract backgrounds, illustrated mascots — from text prompts for EU small businesses. It is a self-serve design tool with a conventional editor interface; there is no conversational persona and users obviously operate a software tool. Policy and output filters block photorealistic depictions of real, identifiable people, so nothing resembles actual persons. We call a third-party image-model API rather than training, providing or distributing any model ourselves, and we determine the purposes of our customer account data, which stays in the EU. No persuasion techniques of any kind are used.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-transparency-synthetic": "applies",
+        "aia-transparency-deepfake": "does_not_apply",
+        "aia-transparency-interaction": "does_not_apply",
+        "aia-prohibited-subliminal": "does_not_apply",
+        "aia-gpai-provider": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies"
+      }
+    },
+    {
+      "id": "campaign-deepfake-studio",
+      "title": "Agency producing consented political deepfakes",
+      "description": "VoteVision, a political-communications agency, uses a licensed third-party video-synthesis platform under our own account to produce hyper-realistic videos of consenting politicians — their real face and cloned voice delivering scripted campaign messages — which we publish on social media to the general public. We did not build the platform and we do not resell it; we operate it in the course of our professional services and we decide what client material is processed with it.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-role-deployer": "applies",
+        "aia-role-provider": "does_not_apply",
+        "aia-transparency-deepfake": "applies",
+        "aia-transparency-synthetic": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies"
+      }
+    },
+    {
+      "id": "exam-proctoring-platform",
+      "title": "Remote exam proctoring for schools and universities",
+      "description": "ProctorEU provides EU universities and secondary schools — students from age 15 — a remote-exam monitoring service: webcam gaze direction, away-from-screen detection and second-person detection produce integrity flags with confidence scores during online tests. Human proctors employed by each institution review every flag; no exam is voided automatically. We explicitly do not infer emotions or stress states. Student video is processed solely on each institution's documented instructions, never for our own purposes.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-high-risk-annex3": "applies",
+        "aia-prohibited-emotion-workplace": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-processor": "applies",
+        "gdpr-role-controller": "does_not_apply",
+        "gdpr-children": "applies",
+        "gdpr-automated-decisions": "does_not_apply",
+        "gdpr-dpia-required": "applies"
+      }
+    },
+    {
+      "id": "application-mail-router",
+      "title": "Keyword routing of job applications to folders",
+      "description": "SortHR is a tool we license to EU employers that reads incoming job-application emails and routes each to the right vacancy folder by matching role keywords in the subject line and CV filename. It operates inside hiring workflows, but it performs no scoring, no ranking, no evaluation of any candidate and no profiling of any person — humans screen every application exactly as before. It is purely a preparatory filing step that replaces manual sorting. We develop it and sell it under our own name.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-high-risk-annex3": "applies",
+        "aia-art6-derogation": "applies",
+        "aia-role-provider": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-automated-decisions": "does_not_apply",
+        "gdpr-dpia-required": "does_not_apply"
+      }
+    },
+    {
+      "id": "machine-telemetry-predictor",
+      "title": "Industrial predictive maintenance (no personal data)",
+      "description": "GearGuard analyses vibration and temperature telemetry from factory bearings and gearboxes to predict failures days in advance, sold to manufacturers worldwide including the EU. The pipeline processes machine sensor streams only — no employee, customer or any other personal data at any point. Predictions surface on maintenance dashboards and technicians schedule interventions; the system does not control machinery and is not part of any safety function, so a wrong prediction at worst wastes an inspection.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-eu-market": "applies",
+        "aia-high-risk-annex3": "does_not_apply",
+        "aia-high-risk-product-safety": "does_not_apply",
+        "gdpr-applies": "does_not_apply"
+      }
+    },
+    {
+      "id": "us-only-wellness-app",
+      "title": "US-only mood journaling app",
+      "description": "MoodLog is a US-incorporated mood-journaling app distributed only on the US app stores, with marketing, payments and terms restricted to US residents; we geo-block EU sign-ups and do not offer services to or monitor anyone in the European Union. An on-device model summarises a user's journal entries into weekly mood insights shown privately to that user.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-eu-market": "does_not_apply",
+        "gdpr-applies": "does_not_apply"
+      }
+    },
+    {
+      "id": "fitness-coaching-platform",
+      "title": "EU fitness platform with wearable health data",
+      "description": "FitOrbit is an EU consumer fitness platform with about two million active members. Wearable integrations stream heart rate, sleep and workout data continuously, and our models generate personalised coaching plans from it. We determine all purposes, rely on member consent, and use a US-based analytics subprocessor for engagement metrics. The service is for adults (18+) only. Coaching suggestions are recommendations a member can ignore — there are no automated decisions with legal or similarly significant effects, and recreational fitness coaching is not an essential service like credit or insurance.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-high-risk-annex3": "does_not_apply",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-lawful-basis": "applies",
+        "gdpr-special-categories": "applies",
+        "gdpr-children": "does_not_apply",
+        "gdpr-automated-decisions": "does_not_apply",
+        "gdpr-dpia-required": "applies",
+        "gdpr-dpo-required": "applies",
+        "gdpr-transfers": "applies"
+      }
+    },
+    {
+      "id": "bank-deploys-vendor-model",
+      "title": "Bank deploying a vendor credit model (deployer perspective)",
+      "description": "EuroCredit Bank licenses a vendor's loan-default prediction model and runs it inside our own credit workflow, on-premises and under our full authority — the vendor never accesses our data. We set the cut-offs: consumer applications under 10,000 EUR (about 80% of volume) are approved or declined entirely automatically with legal effect on the applicant, while loan officers handle the remainder. We determine the purposes and means of all applicant data processing. We did not develop the model, we do not modify it, and we do not offer it to anyone else.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-role-deployer": "applies",
+        "aia-role-provider": "does_not_apply",
+        "aia-high-risk-annex3": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-role-controller": "applies",
+        "gdpr-role-processor": "does_not_apply",
+        "gdpr-lawful-basis": "applies",
+        "gdpr-automated-decisions": "applies",
+        "gdpr-dpia-required": "applies"
+      }
+    },
+    {
+      "id": "callcenter-customer-emotion",
+      "title": "Customer emotion routing in support calls",
+      "description": "SupportPulse analyses the voices of customers calling EU support lines, inferring frustration and satisfaction in real time so angry callers are routed to senior agents. It is applied exclusively to customers who dial in — never to the employees taking the calls, and not in any workplace-monitoring or education context. Callers hear a recorded notice that an AI system analyses the call. Client companies deploy it in their contact centres through our SaaS, and we process call audio only on their documented instructions.",
+      "expected_verdicts": {
+        "aia-is-ai-system": "applies",
+        "aia-prohibited-emotion-workplace": "does_not_apply",
+        "aia-transparency-emotion-biometric": "applies",
+        "gdpr-applies": "applies",
+        "gdpr-role-processor": "applies"
+      }
+    }
+  ]
+}

@@ -15,9 +15,9 @@ def docs():
 
 
 class TestParser:
-    def test_parses_articles_and_recitals(self, docs):
+    def test_parses_articles_recitals_and_annexes(self, docs):
         refs = {d.ref for d in docs}
-        assert refs == {"Art. 1", "Art. 2", "Recital 1"}
+        assert refs == {"Art. 1", "Art. 2", "Recital 1", "Annex I", "Annex II"}
 
     def test_numbered_paragraphs_with_points(self, docs):
         art1 = next(d for d in docs if d.ref == "Art. 1")
@@ -37,6 +37,47 @@ class TestParser:
     def test_recital_marker_stripped(self, docs):
         rct = next(d for d in docs if d.ref == "Recital 1")
         assert rct.paragraphs[0].text.startswith("The purpose")
+
+
+class TestAnnexParser:
+    def test_annex_title_and_kind(self, docs):
+        anx = next(d for d in docs if d.ref == "Annex I")
+        assert anx.kind == "annex"
+        assert anx.title == "High-risk areas"
+
+    def test_sections_and_point_refs(self, docs):
+        anx = next(d for d in docs if d.ref == "Annex I")
+        assert [p.ref for p in anx.paragraphs] == [
+            "Annex I",
+            "Annex I Sec. A",
+            "Annex I Sec. A(1)",
+            "Annex I Sec. A(2)",
+            "Annex I Sec. B",
+            "Annex I Sec. B(1)",
+        ]
+
+    def test_nested_lettered_points_inlined_once(self, docs):
+        anx = next(d for d in docs if d.ref == "Annex I")
+        point = next(p for p in anx.paragraphs if p.ref == "Annex I Sec. A(1)")
+        assert point.text == "Employment: (a) recruitment systems; (b) promotion decisions."
+
+    def test_span_cell_without_p_is_captured(self, docs):
+        anx = next(d for d in docs if d.ref == "Annex I")
+        point = next(p for p in anx.paragraphs if p.ref == "Annex I Sec. A(2)")
+        assert point.text.startswith("Directive 2006/42/EC")
+        assert "OJ L 157" in point.text
+
+    def test_dash_lists_merge_into_preamble(self, docs):
+        anx = next(d for d in docs if d.ref == "Annex II")
+        preamble = anx.paragraphs[0]
+        assert preamble.ref == "Annex II"
+        assert "terrorism," in preamble.text
+        assert "trafficking in human beings," in preamble.text
+
+    def test_enumeration_div_points(self, docs):
+        anx = next(d for d in docs if d.ref == "Annex II")
+        point = next(p for p in anx.paragraphs if p.ref == "Annex II(1)")
+        assert point.text == "This point is enumerated via a wrapper div."
 
 
 class TestChunker:

@@ -1,0 +1,714 @@
+# RegLens assessment rulebook.
+#
+# Classification logic for the compliance assessment agent lives here as
+# data, not prompts: per rule the engine retrieves `expected_sources`, asks
+# the model the `question` about the described system, and validates a typed
+# verdict (applies | does_not_apply | needs_info) with citations. Schema and
+# gating/audience semantics: app/assessments/schema.py.
+#
+# Refs are document-level as ingested ("Art. 5", "Annex III"); a test
+# cross-checks every ref against the parsed corpora.
+
+version: "v1"
+
+obligations:
+  # ── EU AI Act ────────────────────────────────────────────────────────────
+  - id: aia-art5-cease
+    title: Cease or redesign the prohibited practice
+    summary: >-
+      The practice may not be placed on the market, put into service, or
+      used in the EU; remove or fundamentally redesign it before launch.
+    audience: any
+    citations: [{corpus: ai-act, ref: Art. 5}]
+  - id: aia-art9-risk-management
+    title: Establish a risk management system
+    summary: >-
+      Run a continuous, documented risk management process across the
+      high-risk system's lifecycle: identify, estimate, and mitigate risks.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 9}]
+  - id: aia-art10-data-governance
+    title: Apply training data governance
+    summary: >-
+      Subject training, validation, and testing datasets to documented
+      governance: relevance, representativeness, error checks, bias
+      detection and mitigation.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 10}]
+  - id: aia-art11-technical-documentation
+    title: Draw up technical documentation
+    summary: >-
+      Prepare and keep current the Annex IV technical documentation before
+      placing the system on the market.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 11}, {corpus: ai-act, ref: Annex IV}]
+  - id: aia-art12-record-keeping
+    title: Enable automatic event logging
+    summary: >-
+      Design the system to automatically record events (logs) over its
+      lifetime to support traceability and post-market monitoring.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 12}]
+  - id: aia-art13-instructions
+    title: Provide instructions for use to deployers
+    summary: >-
+      Ship transparent instructions covering capabilities, limitations,
+      oversight measures, and expected performance so deployers can comply.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 13}]
+  - id: aia-art14-human-oversight
+    title: Design for human oversight
+    summary: >-
+      Build in measures that let natural persons effectively oversee the
+      system: understand outputs, intervene, or stop it.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 14}]
+  - id: aia-art15-accuracy-robustness
+    title: Meet accuracy, robustness and cybersecurity requirements
+    summary: >-
+      Achieve and declare appropriate accuracy, resilience to errors and
+      adversarial manipulation, and cybersecurity for the intended purpose.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 15}]
+  - id: aia-art17-qms
+    title: Operate a quality management system
+    summary: >-
+      Put a documented quality management system in place covering design,
+      development, testing, data management, and post-market monitoring.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 17}]
+  - id: aia-art43-conformity-assessment
+    title: Complete conformity assessment
+    summary: >-
+      Pass the applicable conformity assessment procedure (internal control
+      or notified body) and affix CE marking before placing on the market.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 43}]
+  - id: aia-art49-registration
+    title: Register in the EU database
+    summary: >-
+      Register the high-risk system in the EU database before placing it on
+      the market or putting it into service.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 49}]
+  - id: aia-art26-deployer-duties
+    title: Fulfil deployer duties
+    summary: >-
+      Use the system per its instructions, assign trained human oversight,
+      ensure relevant input data, monitor operation, and retain logs.
+    audience: deployer
+    citations: [{corpus: ai-act, ref: Art. 26}]
+  - id: aia-art27-fria
+    title: Conduct a fundamental rights impact assessment
+    summary: >-
+      Public-body and certain private deployers of Annex III systems must
+      assess fundamental-rights impacts before first use.
+    audience: deployer
+    citations: [{corpus: ai-act, ref: Art. 27}]
+  - id: aia-art6-document-derogation
+    title: Document the non-high-risk assessment
+    summary: >-
+      Document why the Annex III system is considered not high-risk under
+      Art. 6(3) and register the assessment before placing it on the market.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 6}, {corpus: ai-act, ref: Art. 49}]
+  - id: aia-art50-disclose-ai
+    title: Disclose AI interaction
+    summary: >-
+      Inform people clearly that they are interacting with an AI system
+      unless this is obvious from context.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 50}]
+  - id: aia-art50-mark-synthetic
+    title: Mark synthetic content
+    summary: >-
+      Mark AI-generated audio, image, video, or text output in a
+      machine-readable, detectable format.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 50}]
+  - id: aia-art50-disclose-deepfake
+    title: Label deep fakes and AI public-interest text
+    summary: >-
+      Disclose that deep-fake content has been artificially generated or
+      manipulated; label AI-generated text published to inform the public.
+    audience: deployer
+    citations: [{corpus: ai-act, ref: Art. 50}]
+  - id: aia-art50-inform-emotion
+    title: Inform people exposed to emotion recognition or biometric categorisation
+    summary: >-
+      Tell exposed persons the system is operating and process their
+      personal data in line with the GDPR.
+    audience: deployer
+    citations: [{corpus: ai-act, ref: Art. 50}]
+  - id: aia-art53-gpai-docs
+    title: Maintain GPAI model documentation
+    summary: >-
+      Keep Annex XI technical documentation and provide Annex XII
+      information to downstream providers integrating the model.
+    audience: provider
+    citations:
+      - {corpus: ai-act, ref: Art. 53}
+      - {corpus: ai-act, ref: Annex XI}
+      - {corpus: ai-act, ref: Annex XII}
+  - id: aia-art53-copyright-policy
+    title: Adopt a copyright compliance policy
+    summary: >-
+      Put a policy in place to respect EU copyright law, including
+      machine-readable text-and-data-mining opt-outs.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 53}]
+  - id: aia-art53-training-summary
+    title: Publish a training content summary
+    summary: >-
+      Make a sufficiently detailed public summary of the content used to
+      train the model, per the AI Office template.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 53}]
+  - id: aia-art55-systemic-duties
+    title: Fulfil systemic-risk model duties
+    summary: >-
+      Perform state-of-the-art model evaluations and adversarial testing,
+      assess and mitigate systemic risks, report serious incidents, and
+      ensure cybersecurity.
+    audience: provider
+    citations: [{corpus: ai-act, ref: Art. 55}]
+
+  # ── GDPR ─────────────────────────────────────────────────────────────────
+  - id: gdpr-art6-lawful-basis
+    title: Identify and document a lawful basis
+    summary: >-
+      Determine the Art. 6(1) basis (consent, contract, legal obligation,
+      vital interests, public task, legitimate interests) for each purpose
+      before processing starts.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 6}]
+  - id: gdpr-art9-condition
+    title: Establish a special-category condition
+    summary: >-
+      Processing special categories requires an Art. 9(2) condition (e.g.
+      explicit consent, employment law, substantial public interest) on top
+      of the lawful basis.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 9}]
+  - id: gdpr-art13-14-transparency
+    title: Provide privacy notices
+    summary: >-
+      Give data subjects the Art. 13/14 information (purposes, basis,
+      recipients, rights, retention) at collection time.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 13}, {corpus: gdpr, ref: Art. 14}]
+  - id: gdpr-art22-safeguards
+    title: Safeguard automated decisions
+    summary: >-
+      Ensure a valid Art. 22(2) ground and provide the right to human
+      intervention, to express a view, and to contest the decision.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 22}]
+  - id: gdpr-art25-dpbd
+    title: Implement data protection by design and by default
+    summary: >-
+      Build minimisation, purpose limitation, and protective defaults into
+      the system's design rather than bolting them on.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 25}]
+  - id: gdpr-art28-processor-contract
+    title: Put Art. 28 processing contracts in place
+    summary: >-
+      Processing on behalf of a controller requires a binding contract
+      covering instructions, confidentiality, security, sub-processors,
+      and deletion/return.
+    audience: any
+    citations: [{corpus: gdpr, ref: Art. 28}]
+  - id: gdpr-art30-ropa
+    title: Maintain records of processing activities
+    summary: >-
+      Keep written records of processing purposes, categories, recipients,
+      transfers, and safeguards, available to the supervisory authority.
+    audience: any
+    citations: [{corpus: gdpr, ref: Art. 30}]
+  - id: gdpr-art32-security
+    title: Secure the processing
+    summary: >-
+      Apply appropriate technical and organisational measures
+      (pseudonymisation, encryption, resilience, tested recovery).
+    audience: any
+    citations: [{corpus: gdpr, ref: Art. 32}]
+  - id: gdpr-art33-34-breach
+    title: Operate breach notification procedures
+    summary: >-
+      Be able to notify the supervisory authority within 72 hours and
+      affected individuals when a breach poses high risk to them.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 33}, {corpus: gdpr, ref: Art. 34}]
+  - id: gdpr-art35-dpia
+    title: Conduct a data protection impact assessment
+    summary: >-
+      Assess necessity, proportionality, risks, and mitigations before
+      starting likely-high-risk processing; consult the authority if
+      residual risk stays high.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 35}]
+  - id: gdpr-art37-dpo
+    title: Designate a Data Protection Officer
+    summary: >-
+      Appoint a DPO with expert knowledge, involved in all data protection
+      matters and free from conflicts of interest.
+    audience: any
+    citations: [{corpus: gdpr, ref: Art. 37}]
+  - id: gdpr-art8-child-consent
+    title: Verify age and parental consent
+    summary: >-
+      For information society services offered to children, obtain
+      verifiable parental consent below the applicable age threshold.
+    audience: controller
+    citations: [{corpus: gdpr, ref: Art. 8}]
+  - id: gdpr-chv-transfer-safeguards
+    title: Use a Chapter V transfer mechanism
+    summary: >-
+      Base third-country transfers on an adequacy decision or appropriate
+      safeguards (SCCs, BCRs) and assess the destination's legal regime.
+    audience: any
+    citations:
+      - {corpus: gdpr, ref: Art. 44}
+      - {corpus: gdpr, ref: Art. 45}
+      - {corpus: gdpr, ref: Art. 46}
+
+rules:
+  # ── AI Act: scope ────────────────────────────────────────────────────────
+  - id: aia-is-ai-system
+    group: ai-act/scope
+    question: >-
+      Does the described system meet the AI Act definition of an AI system:
+      a machine-based system operating with some level of autonomy that
+      infers from the inputs it receives how to generate outputs such as
+      predictions, content, recommendations, or decisions? Note: a product
+      that integrates or is built on a third-party AI model (e.g. an LLM
+      API) is itself an AI system; generating content already counts as
+      inferring outputs, whether or not the system makes decisions about
+      people.
+    retrieval_queries:
+      - definition of AI system machine-based autonomy inference outputs
+    expected_sources: [{corpus: ai-act, ref: Art. 3}]
+    on_applies: {severity: informational}
+  - id: aia-eu-market
+    group: ai-act/scope
+    question: >-
+      Is the AI system placed on the EU market, put into service in the EU,
+      or are its outputs used in the EU?
+    retrieval_queries:
+      - scope placing on the market putting into service in the Union
+    expected_sources: [{corpus: ai-act, ref: Art. 2}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: informational}
+
+  # ── AI Act: prohibited practices (Art. 5) ────────────────────────────────
+  - id: aia-prohibited-subliminal
+    group: ai-act/prohibited
+    question: >-
+      Does the system deploy subliminal techniques beyond a person's
+      awareness, or purposefully manipulative or deceptive techniques, that
+      materially distort behaviour and cause or are reasonably likely to
+      cause significant harm?
+    retrieval_queries:
+      - prohibited subliminal manipulative deceptive techniques distorting behaviour
+    expected_sources: [{corpus: ai-act, ref: Art. 5}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+  - id: aia-prohibited-vulnerabilities
+    group: ai-act/prohibited
+    question: >-
+      Does the system exploit vulnerabilities of people due to their age,
+      disability, or a specific social or economic situation, to materially
+      distort their behaviour in a way that causes or is reasonably likely
+      to cause significant harm?
+    retrieval_queries:
+      - prohibited exploiting vulnerabilities age disability social economic situation
+    expected_sources: [{corpus: ai-act, ref: Art. 5}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+  - id: aia-prohibited-social-scoring
+    group: ai-act/prohibited
+    question: >-
+      Does the system evaluate or classify people over time based on social
+      behaviour or personal characteristics, producing a social score that
+      leads to detrimental treatment in unrelated contexts or treatment
+      disproportionate to the behaviour?
+    retrieval_queries:
+      - prohibited social scoring evaluation classification detrimental treatment
+    expected_sources: [{corpus: ai-act, ref: Art. 5}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+  - id: aia-prohibited-predictive-policing
+    group: ai-act/prohibited
+    question: >-
+      Does the system assess or predict the risk of a person committing a
+      criminal offence based solely on profiling or on personality traits,
+      rather than supporting a human assessment grounded in objective,
+      verifiable facts directly linked to criminal activity?
+    retrieval_queries:
+      - prohibited risk assessment predicting criminal offence profiling personality traits
+    expected_sources: [{corpus: ai-act, ref: Art. 5}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+  - id: aia-prohibited-face-scraping
+    group: ai-act/prohibited
+    question: >-
+      Does the system create or expand a facial recognition database
+      through untargeted scraping of facial images from the internet or
+      CCTV footage?
+    retrieval_queries:
+      - prohibited untargeted scraping facial images facial recognition database
+    expected_sources: [{corpus: ai-act, ref: Art. 5}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+  - id: aia-prohibited-emotion-workplace
+    group: ai-act/prohibited
+    question: >-
+      Does the system infer the emotions of people in a workplace or an
+      education institution, outside medical or safety reasons?
+    retrieval_queries:
+      - prohibited emotion recognition workplace education institutions
+    expected_sources: [{corpus: ai-act, ref: Art. 5}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+  - id: aia-prohibited-biometric-categorisation
+    group: ai-act/prohibited
+    question: >-
+      Does the system biometrically categorise people to deduce or infer
+      their race, political opinions, trade union membership, religious or
+      philosophical beliefs, sex life, or sexual orientation?
+    retrieval_queries:
+      - prohibited biometric categorisation deduce race political opinions sexual orientation
+    expected_sources: [{corpus: ai-act, ref: Art. 5}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+  - id: aia-prohibited-rbi-le
+    group: ai-act/prohibited
+    question: >-
+      Does the system perform real-time remote biometric identification in
+      publicly accessible spaces for law enforcement purposes, outside the
+      narrow exceptions (targeted search for victims, imminent threats,
+      locating suspects of the serious offences listed in Annex II)?
+    retrieval_queries:
+      - real-time remote biometric identification publicly accessible spaces law enforcement
+    expected_sources: [{corpus: ai-act, ref: Art. 5}, {corpus: ai-act, ref: Annex II}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: blocker, obligations: [aia-art5-cease]}
+
+  # ── AI Act: high-risk classification (Art. 6 + Annexes I/III) ───────────
+  - id: aia-high-risk-annex3
+    group: ai-act/high-risk
+    question: >-
+      Does the system's intended use fall within an Annex III high-risk
+      area: biometrics; critical infrastructure; education and vocational
+      training; employment and workers' management; access to essential
+      private or public services (including creditworthiness assessment and
+      life/health insurance pricing); law enforcement; migration, asylum
+      and border control; or administration of justice and democratic
+      processes?
+    retrieval_queries:
+      - Annex III high-risk areas employment education credit law enforcement
+      - classification rules for high-risk AI systems
+    expected_sources: [{corpus: ai-act, ref: Annex III}, {corpus: ai-act, ref: Art. 6}]
+    requires: [aia-is-ai-system]
+    on_applies:
+      severity: pre-market
+      obligations:
+        - aia-art9-risk-management
+        - aia-art10-data-governance
+        - aia-art11-technical-documentation
+        - aia-art12-record-keeping
+        - aia-art13-instructions
+        - aia-art14-human-oversight
+        - aia-art15-accuracy-robustness
+        - aia-art17-qms
+        - aia-art43-conformity-assessment
+        - aia-art49-registration
+        - aia-art26-deployer-duties
+        - aia-art27-fria
+  - id: aia-high-risk-product-safety
+    group: ai-act/high-risk
+    question: >-
+      Is the AI system itself a product — or used as a safety component of
+      a product — covered by the Union harmonisation legislation listed in
+      Annex I (e.g. machinery, toys, lifts, radio equipment, medical
+      devices, vehicles) and subject to third-party conformity assessment?
+    retrieval_queries:
+      - high-risk safety component product Union harmonisation legislation Annex I
+    expected_sources: [{corpus: ai-act, ref: Art. 6}, {corpus: ai-act, ref: Annex I}]
+    requires: [aia-is-ai-system]
+    on_applies:
+      severity: pre-market
+      obligations:
+        - aia-art9-risk-management
+        - aia-art10-data-governance
+        - aia-art11-technical-documentation
+        - aia-art12-record-keeping
+        - aia-art13-instructions
+        - aia-art14-human-oversight
+        - aia-art15-accuracy-robustness
+        - aia-art17-qms
+        - aia-art43-conformity-assessment
+        - aia-art26-deployer-duties
+  - id: aia-art6-derogation
+    group: ai-act/high-risk
+    question: >-
+      Although the use case sits in an Annex III area, is the system
+      limited to a narrow procedural task, improving the result of a
+      previously completed human activity, detecting decision-making
+      patterns without replacing human assessment, or a purely preparatory
+      task — and does it avoid any profiling of natural persons?
+    retrieval_queries:
+      - derogation Annex III system not considered high-risk narrow procedural task
+    expected_sources: [{corpus: ai-act, ref: Art. 6}]
+    requires: [aia-high-risk-annex3]
+    on_applies:
+      severity: informational
+      obligations: [aia-art6-document-derogation]
+
+  # ── AI Act: operator roles ───────────────────────────────────────────────
+  - id: aia-role-provider
+    group: ai-act/roles
+    question: >-
+      Does the organisation develop the AI system (or have it developed)
+      and place it on the market or put it into service under its own name
+      or trademark?
+    retrieval_queries:
+      - definition provider develops AI system places on the market
+    expected_sources: [{corpus: ai-act, ref: Art. 3}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: informational}
+  - id: aia-role-deployer
+    group: ai-act/roles
+    question: >-
+      Does the organisation itself use an AI system under its own authority
+      in the course of its professional activities — e.g. running its own
+      or a licensed system inside its internal workflows? Merely
+      developing, selling, or hosting a system that customers use under
+      their own authority does not make the organisation a deployer.
+    retrieval_queries:
+      - definition deployer using AI system under its authority
+    expected_sources: [{corpus: ai-act, ref: Art. 3}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: informational}
+
+  # ── AI Act: transparency (Art. 50) ───────────────────────────────────────
+  - id: aia-transparency-interaction
+    group: ai-act/transparency
+    question: >-
+      Is the system intended to interact directly with natural persons
+      (e.g. a chatbot or voice assistant) in a way where it is not obvious
+      from context that they are dealing with a machine?
+    retrieval_queries:
+      - transparency obligation inform persons interacting with AI system chatbot
+    expected_sources: [{corpus: ai-act, ref: Art. 50}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: operational, obligations: [aia-art50-disclose-ai]}
+  - id: aia-transparency-synthetic
+    group: ai-act/transparency
+    question: >-
+      Does the system generate synthetic audio, image, video, or text
+      content?
+    retrieval_queries:
+      - marking synthetic content machine-readable detectable artificially generated
+    expected_sources: [{corpus: ai-act, ref: Art. 50}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: operational, obligations: [aia-art50-mark-synthetic]}
+  - id: aia-transparency-deepfake
+    group: ai-act/transparency
+    question: >-
+      Does the system generate or manipulate image, audio, or video content
+      constituting a deep fake, or generate AI text published to inform the
+      public on matters of public interest?
+    retrieval_queries:
+      - deep fake disclosure artificially generated or manipulated content
+    expected_sources: [{corpus: ai-act, ref: Art. 50}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: operational, obligations: [aia-art50-disclose-deepfake]}
+  - id: aia-transparency-emotion-biometric
+    group: ai-act/transparency
+    question: >-
+      Does the system perform emotion recognition or biometric
+      categorisation in a context where that is permitted — i.e. NOT the
+      workplace/education emotion inference prohibited by Article 5? If
+      its emotion recognition occurs only in the prohibited workplace or
+      education context, answer does_not_apply.
+    retrieval_queries:
+      - emotion recognition biometric categorisation inform exposed persons
+    expected_sources: [{corpus: ai-act, ref: Art. 50}]
+    requires: [aia-is-ai-system]
+    on_applies: {severity: operational, obligations: [aia-art50-inform-emotion]}
+
+  # ── AI Act: general-purpose AI models ────────────────────────────────────
+  # Note: GPAI rules deliberately do not require aia-is-ai-system — a model
+  # is regulated as such before it is integrated into any system.
+  - id: aia-gpai-provider
+    group: ai-act/gpai
+    question: >-
+      Does the organisation provide a general-purpose AI model — trained on
+      broad data at scale, displaying significant generality, and capable
+      of competently performing a wide range of distinct tasks (e.g. a
+      foundation or large generative model)?
+    retrieval_queries:
+      - definition general-purpose AI model significant generality wide range of tasks
+    expected_sources: [{corpus: ai-act, ref: Art. 3}]
+    on_applies:
+      severity: pre-market
+      obligations:
+        - aia-art53-gpai-docs
+        - aia-art53-copyright-policy
+        - aia-art53-training-summary
+  - id: aia-gpai-systemic
+    group: ai-act/gpai
+    question: >-
+      Does the general-purpose AI model have high-impact capabilities —
+      for example cumulative training compute above 10^25 FLOPs, or
+      designation by the Commission based on the Annex XIII criteria?
+    retrieval_queries:
+      - general-purpose AI model systemic risk high-impact capabilities
+      - criteria designation systemic risk Annex XIII
+    expected_sources: [{corpus: ai-act, ref: Art. 51}, {corpus: ai-act, ref: Annex XIII}]
+    requires: [aia-gpai-provider]
+    on_applies: {severity: pre-market, obligations: [aia-art55-systemic-duties]}
+
+  # ── GDPR: scope ──────────────────────────────────────────────────────────
+  - id: gdpr-applies
+    group: gdpr/scope
+    question: >-
+      Does the system process personal data — any information relating to
+      an identified or identifiable natural person — within the GDPR's
+      scope: an EU establishment, offering goods or services to people in
+      the EU, or monitoring their behaviour?
+    retrieval_queries:
+      - material scope processing of personal data
+      - territorial scope establishment offering goods services monitoring behaviour
+    expected_sources: [{corpus: gdpr, ref: Art. 2}, {corpus: gdpr, ref: Art. 3}]
+    on_applies: {severity: informational}
+
+  # ── GDPR: roles ──────────────────────────────────────────────────────────
+  - id: gdpr-role-controller
+    group: gdpr/roles
+    question: >-
+      Does the organisation determine the purposes and means of the
+      processing of personal data (alone or jointly)?
+    retrieval_queries:
+      - definition controller determines purposes and means of processing
+    expected_sources: [{corpus: gdpr, ref: Art. 4}]
+    requires: [gdpr-applies]
+    on_applies:
+      severity: operational
+      obligations:
+        - gdpr-art13-14-transparency
+        - gdpr-art25-dpbd
+        - gdpr-art30-ropa
+        - gdpr-art32-security
+        - gdpr-art33-34-breach
+  - id: gdpr-role-processor
+    group: gdpr/roles
+    question: >-
+      Does the organisation process personal data on behalf of, and under
+      the documented instructions of, another organisation?
+    retrieval_queries:
+      - definition processor processes personal data on behalf of the controller
+    expected_sources: [{corpus: gdpr, ref: Art. 4}, {corpus: gdpr, ref: Art. 28}]
+    requires: [gdpr-applies]
+    on_applies:
+      severity: operational
+      obligations:
+        - gdpr-art28-processor-contract
+        - gdpr-art30-ropa
+        - gdpr-art32-security
+
+  # ── GDPR: lawfulness ─────────────────────────────────────────────────────
+  - id: gdpr-lawful-basis
+    group: gdpr/lawfulness
+    question: >-
+      Does the organisation process personal data for purposes it
+      determines itself, requiring a documented Article 6 lawful basis
+      (consent, contract, legal obligation, vital interests, public task,
+      or legitimate interests)? If it processes only on customers'
+      documented instructions as a processor, answer does_not_apply — the
+      lawful-basis duty then sits with the customer.
+    retrieval_queries:
+      - lawfulness of processing legal basis consent contract legitimate interests
+    expected_sources: [{corpus: gdpr, ref: Art. 6}]
+    requires: [gdpr-applies]
+    on_applies: {severity: pre-market, obligations: [gdpr-art6-lawful-basis]}
+  - id: gdpr-special-categories
+    group: gdpr/lawfulness
+    question: >-
+      Does the system process special categories of personal data: health
+      data, biometric data for unique identification, genetic data, racial
+      or ethnic origin, political opinions, religious beliefs, trade union
+      membership, or data concerning sex life or sexual orientation?
+    retrieval_queries:
+      - processing special categories of personal data health biometric prohibited
+    expected_sources: [{corpus: gdpr, ref: Art. 9}]
+    requires: [gdpr-applies]
+    on_applies: {severity: pre-market, obligations: [gdpr-art9-condition]}
+  - id: gdpr-children
+    group: gdpr/lawfulness
+    question: >-
+      Does the service target children or knowingly process children's
+      personal data (information society services offered directly to a
+      child)?
+    retrieval_queries:
+      - child consent information society services age verification
+    expected_sources: [{corpus: gdpr, ref: Art. 8}]
+    requires: [gdpr-applies]
+    on_applies: {severity: operational, obligations: [gdpr-art8-child-consent]}
+  - id: gdpr-automated-decisions
+    group: gdpr/lawfulness
+    question: >-
+      Does the system make decisions based solely on automated processing,
+      including profiling, that produce legal effects on people or
+      similarly significantly affect them (e.g. hiring, credit, insurance,
+      benefits)?
+    retrieval_queries:
+      - automated individual decision-making profiling legal effects
+    expected_sources: [{corpus: gdpr, ref: Art. 22}]
+    requires: [gdpr-applies]
+    on_applies: {severity: pre-market, obligations: [gdpr-art22-safeguards]}
+
+  # ── GDPR: accountability ─────────────────────────────────────────────────
+  - id: gdpr-dpia-required
+    group: gdpr/accountability
+    question: >-
+      Is the processing likely to result in a high risk to people's rights
+      and freedoms — in particular systematic and extensive automated
+      evaluation or profiling with significant effects, large-scale
+      processing of special categories, or systematic monitoring of
+      publicly accessible areas? The first trigger (systematic evaluation
+      or profiling with significant effects on people) applies regardless
+      of the processing's scale.
+    retrieval_queries:
+      - data protection impact assessment required high risk
+    expected_sources: [{corpus: gdpr, ref: Art. 35}]
+    requires: [gdpr-applies]
+    on_applies: {severity: pre-market, obligations: [gdpr-art35-dpia]}
+  - id: gdpr-dpo-required
+    group: gdpr/accountability
+    question: >-
+      Is the organisation a public authority, or do its core activities
+      involve regular and systematic monitoring of data subjects at large
+      scale, or large-scale processing of special categories of data?
+    retrieval_queries:
+      - designation data protection officer core activities large scale monitoring
+    expected_sources: [{corpus: gdpr, ref: Art. 37}]
+    requires: [gdpr-applies]
+    on_applies: {severity: operational, obligations: [gdpr-art37-dpo]}
+
+  # ── GDPR: transfers ──────────────────────────────────────────────────────
+  - id: gdpr-transfers
+    group: gdpr/transfers
+    question: >-
+      Is personal data transferred outside the EU/EEA — for example to US
+      cloud infrastructure, non-EU subprocessors, or overseas affiliates?
+    retrieval_queries:
+      - transfers of personal data to third countries adequacy safeguards
+    expected_sources:
+      - {corpus: gdpr, ref: Art. 44}
+      - {corpus: gdpr, ref: Art. 45}
+      - {corpus: gdpr, ref: Art. 46}
+    requires: [gdpr-applies]
+    on_applies: {severity: pre-market, obligations: [gdpr-chv-transfer-safeguards]}

@@ -1,5 +1,5 @@
 {
-  "version": "v2",
+  "version": "v3",
   "entries": [
     {"id": "gdpr-principles", "category": "gdpr-principles", "question": "What principles govern the processing of personal data?", "expected": [{"corpus": "gdpr", "ref": "Art. 5"}]},
     {"id": "gdpr-lawful-bases", "category": "gdpr-principles", "question": "What are the lawful bases for processing personal data under the GDPR?", "expected": [{"corpus": "gdpr", "ref": "Art. 6"}]},
@@ -38,7 +38,11 @@
     {"id": "aiact-deployer-obligations", "category": "aiact-highrisk", "question": "What obligations do deployers of high-risk AI systems have?", "expected": [{"corpus": "ai-act", "ref": "Art. 26"}]},
     {"id": "aiact-conformity", "category": "aiact-highrisk", "question": "When can a provider self-assess conformity instead of involving a notified body?", "expected": [{"corpus": "ai-act", "ref": "Art. 43"}]},
     {"id": "aiact-chatbot-transparency", "category": "aiact-transparency", "question": "Do users have to be told they are talking to a chatbot, and must AI-generated content be labelled?", "expected": [{"corpus": "ai-act", "ref": "Art. 50"}]},
-    {"id": "aiact-gpai-systemic", "category": "aiact-gpai", "question": "When is a general-purpose AI model considered to pose systemic risk?", "expected": [{"corpus": "ai-act", "ref": "Art. 51"}]},
+    {"id": "aiact-gpai-systemic", "category": "aiact-gpai", "question": "When is a general-purpose AI model considered to pose systemic risk?", "expected": [{"corpus": "ai-act", "ref": "Art. 51"}, {"corpus": "ai-act", "ref": "Annex XIII"}], "require": "any"},
+    {"id": "aiact-annex3-list", "category": "aiact-highrisk", "question": "Which use cases are listed as high-risk AI systems in Annex III?", "expected": [{"corpus": "ai-act", "ref": "Annex III"}]},
+    {"id": "aiact-recruitment-highrisk", "category": "aiact-highrisk", "question": "Is an AI system that screens job applications and ranks candidates considered high-risk?", "expected": [{"corpus": "ai-act", "ref": "Annex III"}, {"corpus": "ai-act", "ref": "Art. 6"}], "require": "any"},
+    {"id": "aiact-annex1-legislation", "category": "aiact-highrisk", "question": "Are medical devices covered by the Union harmonisation legislation listed in Annex I of the AI Act?", "expected": [{"corpus": "ai-act", "ref": "Annex I"}]},
+    {"id": "aiact-gpai-systemic-criteria", "category": "aiact-gpai", "question": "What criteria and thresholds are used to designate a general-purpose AI model as having systemic risk?", "expected": [{"corpus": "ai-act", "ref": "Annex XIII"}, {"corpus": "ai-act", "ref": "Art. 51"}], "require": "any"},
     {"id": "aiact-gpai-obligations", "category": "aiact-gpai", "question": "What obligations do providers of general-purpose AI models have?", "expected": [{"corpus": "ai-act", "ref": "Art. 53"}]},
     {"id": "aiact-sandbox", "category": "aiact-scope", "question": "What is an AI regulatory sandbox and who can take part?", "expected": [{"corpus": "ai-act", "ref": "Art. 57"}, {"corpus": "ai-act", "ref": "Art. 58"}], "require": "any"},
     {"id": "aiact-incidents", "category": "aiact-highrisk", "question": "Must providers report serious incidents involving high-risk AI systems, and to whom?", "expected": [{"corpus": "ai-act", "ref": "Art. 73"}]},

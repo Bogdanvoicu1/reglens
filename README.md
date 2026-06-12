@@ -43,7 +43,7 @@ Or run the whole stack containerized: `docker compose up -d --build` serves
 the SPA at http://localhost:3000 through nginx (SSE-safe proxy to the API).
 
 The ingestion CLI downloads the official EUR-Lex HTML (cached under
-`backend/data/raw/`), parses it into articles/recitals, produces
+`backend/data/raw/`), parses it into articles, recitals and annexes, produces
 hierarchy-aware chunks with contextual headers, embeds them via the
 configured provider, and stores everything transactionally. Use
 `--skip-embed` to inspect parsing without an API key.
@@ -118,9 +118,10 @@ in [SECURITY.md](SECURITY.md).
 
 ## Evaluation
 
-RegLens ships a versioned golden dataset (50 labeled questions over both
-regulations, including out-of-corpus and red-team adversarial cases:
-instruction override, system-prompt extraction, outside-knowledge bait)
+RegLens ships a versioned golden dataset (54 labeled questions over both
+regulations — including annex coverage, out-of-corpus and red-team
+adversarial cases: instruction override, system-prompt extraction,
+outside-knowledge bait)
 and a threshold-gated eval harness that exercises the real production
 pipeline:
 
@@ -130,16 +131,16 @@ uv run python -m evals.cli retrieval     # deterministic: recall@K, MRR
 uv run python -m evals.cli generation    # full pipeline + LLM-as-judge
 ```
 
-Measured baseline (dataset v2, `gpt-4o-mini` generation, `gpt-4o` judge):
+Measured baseline (dataset v3, `gpt-4o-mini` generation, `gpt-4o` judge):
 
 | Metric | Result | Gate |
 |---|---|---|
 | Retrieval recall@8 | **1.00** | ≥ 0.85 |
-| Retrieval recall@5 | 0.93 | — |
-| Retrieval MRR | 0.72 | ≥ 0.60 |
-| Faithfulness (judge) | **0.98** | ≥ 0.80 |
-| Citation precision (judge) | 0.95 | ≥ 0.80 |
-| Answer relevance (judge) | 0.99 | — |
+| Retrieval recall@5 | 0.96 | — |
+| Retrieval MRR | 0.69 | ≥ 0.60 |
+| Faithfulness (judge) | **1.00** | ≥ 0.80 |
+| Citation precision (judge) | 0.97 | ≥ 0.80 |
+| Answer relevance (judge) | 1.00 | — |
 | Refusal accuracy (8 adversarial/red-team cases) | **1.00** | ≥ 0.80 |
 | False refusal rate | 0.00 | ≤ 0.10 |
 
@@ -165,7 +166,7 @@ uv run mypy app        # types
 ## Status
 
 - [x] M0 — Foundation: API skeleton, Alembic, Docker, observability middleware, CI
-- [x] M1 — Corpus ingestion (EUR-Lex → hierarchy-aware chunks → embeddings, OpenRouter-compatible)
+- [x] M1 — Corpus ingestion (EUR-Lex articles/recitals/annexes → hierarchy-aware chunks → embeddings, OpenRouter-compatible)
 - [x] M2 — Hybrid retrieval (pgvector + FTS + RRF) + grounded generation with citation validation + SSE
 - [x] M3 — Supabase-compatible JWT auth, JIT tenancy, Redis sliding-window rate limiting, answer caching, conversation history
 - [x] M4 — Evaluation harness: golden dataset, recall@K/MRR, LLM-judge faithfulness, threshold gates, CI workflow
@@ -173,3 +174,4 @@ uv run mypy app        # types
 - [x] M6 — RAG metrics + provisioned Grafana dashboards, optional Langfuse tracing, problem+json errors, security headers, body limits
 - [x] Security & cost hardening — see SECURITY.md and Cost engineering
 - [ ] M7 — Docs & demo
+- [ ] v2 — Compliance Assessment Agent: system description → grounded readiness report ([design](docs/ASSESSMENT_AGENT.md)) — A0 foundations landed: annex ingestion, rulebook v1 (31 rules), scenario suite, assessment tables

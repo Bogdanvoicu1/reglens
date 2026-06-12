@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Computed, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import Computed, DateTime, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -118,4 +118,60 @@ class EvalRun(Base):
     git_sha: Mapped[str] = mapped_column(String(40))
     dataset_version: Mapped[str] = mapped_column(String(50))
     metrics: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = created_at_col()
+
+
+class Assessment(Base):
+    """A compliance assessment run; profile and outputs are reproducible via
+    corpus_fingerprint + rulebook_version (both set when the run starts)."""
+
+    __tablename__ = "assessments"
+    __table_args__ = (Index("ix_assessments_tenant_created", "tenant_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID]
+    title: Mapped[str] = mapped_column(String(300), default="")
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    # draft | clarifying | running | complete | failed
+    description: Mapped[str] = mapped_column(Text, default="")
+    system_profile: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    corpus_fingerprint: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    rulebook_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = created_at_col()
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AssessmentFinding(Base):
+    """One persisted stage output: a rule verdict (rule_id set) or a
+    stage-level artifact like the extracted profile (rule_id null)."""
+
+    __tablename__ = "assessment_findings"
+    __table_args__ = (Index("ix_assessment_findings_assessment_ord", "assessment_id", "ord"),)
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    assessment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assessments.id", ondelete="CASCADE")
+    )
+    stage: Mapped[str] = mapped_column(String(50))
+    rule_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    confidence: Mapped[float | None]
+    reasoning: Mapped[str] = mapped_column(Text, default="")
+    citations: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    ord: Mapped[int]
+    created_at: Mapped[datetime] = created_at_col()
+
+
+class AssessmentReport(Base):
+    __tablename__ = "assessment_reports"
+    __table_args__ = (UniqueConstraint("assessment_id", "version"),)
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    assessment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assessments.id", ondelete="CASCADE")
+    )
+    version: Mapped[int] = mapped_column(default=1)
+    report: Mapped[dict] = mapped_column(JSONB)
+    markdown: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = created_at_col()

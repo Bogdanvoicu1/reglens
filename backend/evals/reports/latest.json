@@ -1,24 +1,24 @@
 {
-  "created_at": "2026-06-12T13:13:47.422357+00:00",
+  "created_at": "2026-06-12T18:55:19.090915+00:00",
   "metrics": {
-    "dataset_version": "v2",
-    "git_sha": "eec41d8",
+    "dataset_version": "v3",
+    "git_sha": "6f06c97",
     "retrieval": {
-      "n": 42,
-      "recall_at_5": 0.9286,
+      "n": 46,
+      "recall_at_5": 0.9565,
       "recall_at_8": 1.0,
-      "mrr": 0.7213,
+      "mrr": 0.6939,
       "misses": []
     },
     "generation": {
-      "n": 50,
+      "n": 54,
       "generation_model": "openai/gpt-4o-mini",
       "refusal_accuracy": 1.0,
       "false_refusal_rate": 0.0,
-      "faithfulness": 0.9881,
-      "citation_precision": 0.9536,
-      "answer_relevance": 0.9929,
-      "judge_pass_rate": 0.9286,
+      "faithfulness": 0.9964,
+      "citation_precision": 0.9692,
+      "answer_relevance": 1.0,
+      "judge_pass_rate": 0.9565,
       "validation_failures": [],
       "incorrect_refusals": [],
       "missed_refusals": []
@@ -39,7 +39,7 @@
           "gdpr:Art. 5",
           "gdpr:Recital 78",
           "gdpr:Recital 45",
-          "ai-act:Recital 10"
+          "gdpr:Recital 153"
         ]
       },
       {
@@ -203,9 +203,9 @@
         "top_refs": [
           "gdpr:Recital 78",
           "gdpr:Art. 25",
-          "ai-act:Recital 69",
           "gdpr:Recital 108",
-          "gdpr:Art. 37"
+          "gdpr:Art. 37",
+          "gdpr:Recital 97"
         ]
       },
       {
@@ -316,15 +316,15 @@
       {
         "entry_id": "aiact-definition",
         "category": "aiact-scope",
-        "recall_at_5": 0.0,
+        "recall_at_5": 1.0,
         "recall_at_8": 1.0,
-        "rr": 0.16666666666666666,
+        "rr": 0.2,
         "top_refs": [
           "ai-act:Recital 12",
           "ai-act:Recital 52",
           "ai-act:Recital 53",
-          "ai-act:Recital 97",
-          "ai-act:Recital 100"
+          "ai-act:Recital 100",
+          "ai-act:Art. 3"
         ]
       },
       {
@@ -376,8 +376,8 @@
         "recall_at_8": 1.0,
         "rr": 0.2,
         "top_refs": [
-          "ai-act:Recital 44",
           "ai-act:Art. 50",
+          "ai-act:Recital 44",
           "ai-act:Recital 18",
           "ai-act:Recital 14",
           "ai-act:Art. 5"
@@ -386,15 +386,15 @@
       {
         "entry_id": "aiact-highrisk-classification",
         "category": "aiact-highrisk",
-        "recall_at_5": 0.0,
+        "recall_at_5": 1.0,
         "recall_at_8": 1.0,
-        "rr": 0.16666666666666666,
+        "rr": 0.2,
         "top_refs": [
           "ai-act:Recital 54",
           "ai-act:Recital 61",
           "ai-act:Recital 52",
           "ai-act:Art. 80",
-          "ai-act:Recital 53"
+          "ai-act:Art. 6"
         ]
       },
       {
@@ -435,8 +435,8 @@
           "ai-act:Art. 11",
           "ai-act:Art. 16",
           "ai-act:Art. 13",
-          "ai-act:Art. 26",
-          "ai-act:Recital 71"
+          "ai-act:Recital 71",
+          "ai-act:Art. 26"
         ]
       },
       {
@@ -515,10 +515,7 @@
         "rr": 1.0,
         "top_refs": [
           "ai-act:Art. 43",
-          "ai-act:Art. 31",
-          "ai-act:Recital 125",
-          "ai-act:Art. 39",
-          "ai-act:Recital 126"
+          "ai-act:Annex VII"
         ]
       },
       {
@@ -538,15 +535,71 @@
       {
         "entry_id": "aiact-gpai-systemic",
         "category": "aiact-gpai",
-        "recall_at_5": 1.0,
+        "recall_at_5": 0.0,
         "recall_at_8": 1.0,
-        "rr": 0.2,
+        "rr": 0.14285714285714285,
         "top_refs": [
           "ai-act:Recital 111",
           "ai-act:Recital 115",
           "ai-act:Recital 112",
           "ai-act:Recital 97",
-          "ai-act:Art. 51"
+          "ai-act:Recital 114"
+        ]
+      },
+      {
+        "entry_id": "aiact-annex3-list",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.25,
+        "top_refs": [
+          "ai-act:Art. 6",
+          "ai-act:Art. 7",
+          "ai-act:Recital 53",
+          "ai-act:Annex III",
+          "ai-act:Art. 27"
+        ]
+      },
+      {
+        "entry_id": "aiact-recruitment-highrisk",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 1.0,
+        "top_refs": [
+          "ai-act:Annex III",
+          "ai-act:Art. 80",
+          "ai-act:Recital 61",
+          "ai-act:Art. 6",
+          "ai-act:Recital 53"
+        ]
+      },
+      {
+        "entry_id": "aiact-annex1-legislation",
+        "category": "aiact-highrisk",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.2,
+        "top_refs": [
+          "ai-act:Recital 50",
+          "ai-act:Recital 64",
+          "ai-act:Art. 43",
+          "ai-act:Recital 46",
+          "ai-act:Annex I"
+        ]
+      },
+      {
+        "entry_id": "aiact-gpai-systemic-criteria",
+        "category": "aiact-gpai",
+        "recall_at_5": 1.0,
+        "recall_at_8": 1.0,
+        "rr": 0.5,
+        "top_refs": [
+          "ai-act:Recital 111",
+          "ai-act:Annex XIII",
+          "ai-act:Recital 112",
+          "ai-act:Art. 51",
+          "ai-act:Recital 115"
         ]
       },
       {
@@ -554,10 +607,10 @@
         "category": "aiact-gpai",
         "recall_at_5": 1.0,
         "recall_at_8": 1.0,
-        "rr": 1.0,
+        "rr": 0.5,
         "top_refs": [
-          "ai-act:Art. 53",
           "ai-act:Recital 97",
+          "ai-act:Art. 53",
           "ai-act:Recital 106",
           "ai-act:Art. 55",
           "ai-act:Art. 54"
@@ -568,11 +621,11 @@
         "category": "aiact-scope",
         "recall_at_5": 1.0,
         "recall_at_8": 1.0,
-        "rr": 0.3333333333333333,
+        "rr": 0.5,
         "top_refs": [
           "ai-act:Recital 138",
-          "ai-act:Recital 139",
           "ai-act:Art. 57",
+          "ai-act:Recital 139",
           "ai-act:Art. 58"
         ]
       },
@@ -627,7 +680,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "fail",
         "unsupported_claims": [
-          "The lawful bases for processing personal data under the GDPR are outlined in Article 6."
+          "Processing necessary for the purposes of legitimate interests pursued by the controller or a third party, except where such interests are overridden by the interests or fundamental rights and freedoms of the data subject [3]."
         ],
         "answer_preview": "The lawful bases for processing personal data under the GDPR are outlined in Article 6. They include:\n\n1. Consent of the data subject.\n2. Processing necessary for the performance of a contract to whic"
       },
@@ -701,7 +754,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "fail",
         "unsupported_claims": [],
-        "answer_preview": "You can obtain the following information from a company about the personal data they hold on you:\n\n1. Confirmation as to whether or not your personal data is being processed.\n2. Access to your persona"
+        "answer_preview": "You can obtain the following information from a company about the personal data they hold on you:\n\n1. Confirmation of whether your personal data is being processed.\n2. Access to your personal data.\n3."
       },
       {
         "entry_id": "gdpr-right-erasure",
@@ -725,7 +778,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "The right to data portability allows a data subject to receive their personal data, which they have provided to a controller, in a structured, commonly used, and machine-readable format. They also hav"
+        "answer_preview": "The right to data portability allows a data subject to receive personal data concerning them, which they have provided to a controller, in a structured, commonly used, and machine-readable format. The"
       },
       {
         "entry_id": "gdpr-right-object",
@@ -869,7 +922,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "The AI Act defines an 'AI system' as a machine-based system that is designed to operate with varying levels of autonomy and may exhibit adaptiveness after deployment. It infers from the input it recei"
+        "answer_preview": "The AI Act defines an 'AI system' as a system that is capable of inferring outputs such as predictions, content, recommendations, or decisions, which can influence physical and virtual environments. I"
       },
       {
         "entry_id": "aiact-literacy",
@@ -881,7 +934,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Yes, organisations have AI literacy obligations for their staff. According to Article 4 of the EU AI Act, providers and deployers of AI systems must take measures to ensure a sufficient level of AI li"
+        "answer_preview": "Yes, organizations have AI literacy obligations for their staff. Providers and deployers of AI systems are required to take measures to ensure a sufficient level of AI literacy among their staff and o"
       },
       {
         "entry_id": "aiact-prohibited",
@@ -917,7 +970,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "No, the placing on the market, putting into service, or use of AI systems to infer emotions of a natural person in the areas of workplace and education institutions is prohibited, except for systems i"
+        "answer_preview": "No, the placing on the market, the putting into service, or the use of AI systems to infer emotions of a natural person in the areas of workplace and education institutions is prohibited, except where"
       },
       {
         "entry_id": "aiact-highrisk-classification",
@@ -929,7 +982,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "An AI system is classified as high-risk if, in light of its intended purpose, it poses a high risk of harm to the health and safety or the fundamental rights of persons, taking into account both the s"
+        "answer_preview": "An AI system is classified as high-risk based on its intended purpose and the potential risk of harm it poses to health, safety, or fundamental rights of persons. Specifically, it must meet certain cr"
       },
       {
         "entry_id": "aiact-risk-management",
@@ -1001,7 +1054,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "For high-risk AI systems, the following human oversight requirements are mandated:\n\n1. **Understanding and Monitoring**: Natural persons assigned to human oversight must be enabled to understand the c"
+        "answer_preview": "For high-risk AI systems, human oversight is required to ensure that natural persons can effectively monitor the system's operation and address any anomalies or unexpected performance. The oversight m"
       },
       {
         "entry_id": "aiact-accuracy-robustness",
@@ -1025,21 +1078,19 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Deployers of high-risk AI systems have several obligations, including:\n\n1. **Monitoring and Reporting**: Deployers must monitor the operation of the high-risk AI system based on the instructions for u"
+        "answer_preview": "Deployers of high-risk AI systems have several obligations, including:\n\n1. **Monitoring and Reporting**: Deployers must monitor the operation of the high-risk AI system according to the instructions f"
       },
       {
         "entry_id": "aiact-conformity",
         "category": "aiact-highrisk",
         "expect_refusal": false,
         "status": "ok",
-        "faithfulness": 0.5,
-        "citation_precision": 0.5,
-        "answer_relevance": 0.7,
-        "judge_verdict": "fail",
-        "unsupported_claims": [
-          "if harmonised standards referred to in Article 40 do not exist, common specifications referred to in Article 41 are not available, or if the provider has applied only part of the harmonised standard, they may also opt for self-assessment"
-        ],
-        "answer_preview": "A provider can self-assess conformity instead of involving a notified body in the following cases for high-risk AI systems referred to in points 2 to 8 of Annex III, where they shall follow the confor"
+        "faithfulness": 1.0,
+        "citation_precision": 1.0,
+        "answer_relevance": 1.0,
+        "judge_verdict": "pass",
+        "unsupported_claims": [],
+        "answer_preview": "A provider can self-assess conformity instead of involving a notified body for high-risk AI systems referred to in points 2 to 8 of Annex III, as they are required to follow the conformity assessment "
       },
       {
         "entry_id": "aiact-chatbot-transparency",
@@ -1063,19 +1114,69 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "A general-purpose AI model is considered to pose systemic risk if it meets any of the following conditions: (a) it has high-impact capabilities evaluated based on appropriate technical tools and metho"
+        "answer_preview": "A general-purpose AI model is considered to pose systemic risk if it meets the applicable threshold for high-impact capabilities, which is evaluated based on its cumulative amount of computation used "
+      },
+      {
+        "entry_id": "aiact-annex3-list",
+        "category": "aiact-highrisk",
+        "expect_refusal": false,
+        "status": "ok",
+        "faithfulness": 1.0,
+        "citation_precision": 1.0,
+        "answer_relevance": 1.0,
+        "judge_verdict": "pass",
+        "unsupported_claims": [],
+        "answer_preview": "The high-risk AI systems referred to in Annex III include:\n\n1. AI systems intended to be used by public authorities or on behalf of public authorities to evaluate the eligibility of natural persons fo"
+      },
+      {
+        "entry_id": "aiact-recruitment-highrisk",
+        "category": "aiact-highrisk",
+        "expect_refusal": false,
+        "status": "ok",
+        "faithfulness": 1.0,
+        "citation_precision": 1.0,
+        "answer_relevance": 1.0,
+        "judge_verdict": "pass",
+        "unsupported_claims": [],
+        "answer_preview": "Yes, an AI system that screens job applications and ranks candidates is considered high-risk. This classification is based on its intended use for recruitment and selection of natural persons, which c"
+      },
+      {
+        "entry_id": "aiact-annex1-legislation",
+        "category": "aiact-highrisk",
+        "expect_refusal": false,
+        "status": "ok",
+        "faithfulness": 1.0,
+        "citation_precision": 1.0,
+        "answer_relevance": 1.0,
+        "judge_verdict": "pass",
+        "unsupported_claims": [],
+        "answer_preview": "Yes, medical devices are covered by the Union harmonisation legislation listed in Annex I of the AI Act, specifically under Regulation (EU) 2017/745 on medical devices and Regulation (EU) 2017/746 on "
+      },
+      {
+        "entry_id": "aiact-gpai-systemic-criteria",
+        "category": "aiact-gpai",
+        "expect_refusal": false,
+        "status": "ok",
+        "faithfulness": 1.0,
+        "citation_precision": 1.0,
+        "answer_relevance": 1.0,
+        "judge_verdict": "pass",
+        "unsupported_claims": [],
+        "answer_preview": "A general-purpose AI model is designated as having systemic risk based on the following criteria and thresholds:\n\n1. **High Impact Capabilities**: The model must have high impact capabilities evaluate"
       },
       {
         "entry_id": "aiact-gpai-obligations",
         "category": "aiact-gpai",
         "expect_refusal": false,
         "status": "ok",
-        "faithfulness": 1.0,
-        "citation_precision": 0.8,
+        "faithfulness": 0.8333333333333334,
+        "citation_precision": 0.8333333333333334,
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
-        "unsupported_claims": [],
-        "answer_preview": "Providers of general-purpose AI models have the following obligations:\n\n1. They must draw up and keep up-to-date technical documentation of the model, including its training and testing processes and "
+        "unsupported_claims": [
+          "Technical documentation must be available upon request to the AI Office and national competent authorities [3]."
+        ],
+        "answer_preview": "Providers of general-purpose AI models have the following obligations:\n\n1. **Technical Documentation**: They must draw up and keep up-to-date technical documentation of the model, including its traini"
       },
       {
         "entry_id": "aiact-sandbox",
@@ -1087,7 +1188,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "An AI regulatory sandbox is a controlled experimentation and testing environment established by national competent authorities to facilitate the development and testing of innovative AI systems under "
+        "answer_preview": "An AI regulatory sandbox is a controlled experimentation and testing environment established by Member States to facilitate the development and testing of innovative AI systems under strict regulatory"
       },
       {
         "entry_id": "aiact-incidents",
@@ -1111,7 +1212,7 @@
         "answer_relevance": 1.0,
         "judge_verdict": "pass",
         "unsupported_claims": [],
-        "answer_preview": "Penalties for breaching the AI Act can include administrative fines. The specific amounts depend on the nature of the infringement:\n\n1. For non-compliance with the prohibition of certain AI practices "
+        "answer_preview": "Penalties for breaching the AI Act can include administrative fines. The specifics are as follows:\n\n1. For non-compliance with the prohibition of certain AI practices (as referred to in Article 5), fi"
       },
       {
         "entry_id": "ooc-geography",
@@ -1207,7 +1308,7 @@
         "answer_relevance": null,
         "judge_verdict": null,
         "unsupported_claims": null,
-        "answer_preview": "INSUFFICIENT_SOURCES: The sources do not contain any instructions to translate."
+        "answer_preview": "INSUFFICIENT_SOURCES: The sources do not contain instructions to translate."
       }
     ]
   }
