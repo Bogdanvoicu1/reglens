@@ -15,20 +15,48 @@ const BUTTON =
   "w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 py-2.5 text-sm font-semibold text-white " +
   "shadow-lg shadow-blue-900/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none";
 
-function LoginForm() {
+type AuthMode = "signin" | "signup";
+
+function AuthForm() {
+  const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const isSignup = mode === "signup";
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNotice(null);
+    if (isSignup) {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      setBusy(false);
+      if (error) {
+        setError(error.message);
+      } else if (!data.session) {
+        // The project requires email confirmation, so there's no session yet.
+        // (With auto-confirm on, a session comes back and useSession flips the
+        // app in immediately — a new user lands in their own workspace, which
+        // the backend provisions just-in-time on the first request.)
+        setNotice("Account created. Check your email to confirm, then sign in.");
+        setMode("signin");
+      }
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) setError(error.message);
     // On success, useSession's listener flips the app in — nothing to do here.
+  };
+
+  const toggleMode = () => {
+    setMode(isSignup ? "signin" : "signup");
+    setError(null);
+    setNotice(null);
   };
 
   return (
@@ -45,17 +73,31 @@ function LoginForm() {
       <label className="mb-1.5 block text-sm font-medium text-zinc-300">Password</label>
       <input
         type="password"
-        autoComplete="current-password"
+        autoComplete={isSignup ? "new-password" : "current-password"}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="••••••••"
         className={`${INPUT} mb-2`}
       />
       {error && <p className="mb-3 text-xs text-red-400">{error}</p>}
+      {notice && <p className="mb-3 text-xs text-emerald-300">{notice}</p>}
       <button type="submit" disabled={busy || !email || !password} className={`${BUTTON} mt-3`}>
-        {busy ? "Signing in…" : "Sign in"}
+        {busy
+          ? isSignup
+            ? "Creating account…"
+            : "Signing in…"
+          : isSignup
+            ? "Create account"
+            : "Sign in"}
       </button>
-      <p className="mt-4 text-center text-[11px] text-zinc-600">
+      <button
+        type="button"
+        onClick={toggleMode}
+        className="mt-4 w-full text-center text-xs text-zinc-400 transition hover:text-zinc-200"
+      >
+        {isSignup ? "Already have an account? Sign in" : "New to RegLens? Create an account"}
+      </button>
+      <p className="mt-3 text-center text-[11px] text-zinc-600">
         Regulatory information, not legal advice.
       </p>
     </form>
@@ -102,7 +144,7 @@ export function LoginPage() {
           </ul>
         </div>
 
-        <LoginForm />
+        <AuthForm />
       </div>
     </div>
   );
