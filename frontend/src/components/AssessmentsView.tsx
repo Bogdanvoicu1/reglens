@@ -22,10 +22,12 @@ function Sidebar({
   activeId,
   onNew,
   onSelect,
+  onDeleted,
 }: {
   activeId: string | null;
   onNew: () => void;
   onSelect: (id: string) => void;
+  onDeleted: (id: string) => void;
 }) {
   const queryClient = useQueryClient();
   const { data: assessments } = useQuery({
@@ -36,6 +38,7 @@ function Sidebar({
   const remove = async (id: string) => {
     await api.deleteAssessment(id);
     queryClient.invalidateQueries({ queryKey: ["assessments"] });
+    onDeleted(id);
   };
 
   return (
@@ -148,12 +151,19 @@ export function AssessmentsView() {
     setMode("saved");
   };
 
+  // The assessment currently shown in the main panel (saved view or fresh run).
+  const activeViewId = mode === "saved" ? selectedId : mode === "live" ? state.assessmentId : null;
+  const handleDeleted = (id: string) => {
+    if (id === activeViewId) newAssessment(); // don't leave a deleted report on screen
+  };
+
   return (
     <div className="flex h-full flex-1 overflow-hidden">
       <Sidebar
         activeId={mode === "saved" ? selectedId : null}
         onNew={newAssessment}
         onSelect={selectSaved}
+        onDeleted={handleDeleted}
       />
       <main className="flex-1 overflow-y-auto">
         {mode === "intake" && (
