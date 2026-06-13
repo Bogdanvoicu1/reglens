@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     supabase_jwks_url: str = ""
     supabase_issuer: str = ""  # optional; verified when set
     supabase_audience: str = "authenticated"
+    # Public Supabase project handle, served to the SPA via GET /api/v1/config so
+    # one frontend build works against any backend. The anon key is designed to
+    # be public; NEVER put the service_role key here. When supabase_url is unset,
+    # the SPA shows the local dev-token sign-in instead of the Supabase login.
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
 
     cors_origins: list[str] = ["http://localhost:5173"]
     answer_cache_ttl_seconds: int = 86400

@@ -1,4 +1,4 @@
-import { clearToken } from "../lib/auth";
+import { signOut } from "../lib/auth";
 
 export type View = "chat" | "assess";
 
@@ -67,8 +67,7 @@ export function NavRail({ view, onView }: { view: View; onView: (v: View) => voi
       </div>
       <button
         onClick={() => {
-          clearToken();
-          window.location.reload();
+          void signOut().finally(() => window.location.reload());
         }}
         title="Sign out"
         className="mt-auto flex h-9 w-9 items-center justify-center rounded-xl text-zinc-600 transition hover:bg-white/5 hover:text-zinc-300"
