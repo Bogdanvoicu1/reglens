@@ -78,17 +78,50 @@ class JWKSVerifier:
         )
 
 
+class MultiVerifier:
+    """Routes a token to the right verifier by its declared algorithm, so an
+    HS256 secret (legacy projects, local dev tokens) and a JWKS endpoint (new
+    Supabase projects signing RS256/ES256) can both be configured at once.
+    Routing is by the unverified `alg` header only; each verifier still pins its
+    own algorithms and key, so this does not enable an algorithm-confusion
+    downgrade."""
+
+    def __init__(self, hs256: "HS256Verifier | None", jwks: "JWKSVerifier | None") -> None:
+        self._hs256 = hs256
+        self._jwks = jwks
+
+    def verify(self, token: str) -> dict[str, Any]:
+        alg = jwt.get_unverified_header(token).get("alg", "")
+        if alg == "HS256" and self._hs256 is not None:
+            return self._hs256.verify(token)
+        if alg in ("RS256", "ES256") and self._jwks is not None:
+            return self._jwks.verify(token)
+        raise jwt.InvalidAlgorithmError(f"no verifier configured for token alg {alg!r}")
+
+
 @lru_cache
-def get_verifier() -> HS256Verifier | JWKSVerifier:
+def get_verifier() -> HS256Verifier | JWKSVerifier | MultiVerifier:
     settings: Settings = get_settings()
-    if settings.supabase_jwt_secret:
-        return HS256Verifier(
+    hs256 = (
+        HS256Verifier(
             settings.supabase_jwt_secret, settings.supabase_issuer, settings.supabase_audience
         )
-    if settings.supabase_jwks_url:
-        return JWKSVerifier(
+        if settings.supabase_jwt_secret
+        else None
+    )
+    jwks = (
+        JWKSVerifier(
             settings.supabase_jwks_url, settings.supabase_issuer, settings.supabase_audience
         )
+        if settings.supabase_jwks_url
+        else None
+    )
+    if hs256 and jwks:
+        return MultiVerifier(hs256, jwks)
+    if hs256:
+        return hs256
+    if jwks:
+        return jwks
     raise AuthConfigurationError(
         "Set REGLENS_SUPABASE_JWT_SECRET or REGLENS_SUPABASE_JWKS_URL to enable auth"
     )

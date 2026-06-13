@@ -28,7 +28,16 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
   });
   if (resp.status === 401) {
     clearToken();
-    window.location.reload();
+    // Reload to the sign-in screen, but never more than once in a short window:
+    // a token source that keeps re-supplying a rejected token (e.g. a Supabase
+    // session the backend can't verify) would otherwise cause an infinite
+    // reload loop. After the guard trips, the 401 surfaces as an error instead.
+    const REAUTH_KEY = "reglens.reauth-at";
+    const last = Number(sessionStorage.getItem(REAUTH_KEY) || 0);
+    if (Date.now() - last > 5000) {
+      sessionStorage.setItem(REAUTH_KEY, String(Date.now()));
+      window.location.reload();
+    }
   }
   if (!resp.ok && resp.headers.get("content-type")?.includes("json")) {
     const body = await resp.json().catch(() => ({}));

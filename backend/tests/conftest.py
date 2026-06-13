@@ -6,8 +6,18 @@ import httpx
 import jwt
 import pytest
 
-# Must be set before any app import caches Settings.
+# Must be set before any app import caches Settings. Pin the whole Supabase
+# auth surface so the suite is hermetic: a developer's real .env (issuer, JWKS,
+# project URL) must not leak in and make the verifier reject the HS256 test
+# tokens. Tests run HS256-only with no issuer requirement.
 os.environ.setdefault("REGLENS_SUPABASE_JWT_SECRET", "test-secret")
+for _var in (
+    "REGLENS_SUPABASE_ISSUER",
+    "REGLENS_SUPABASE_JWKS_URL",
+    "REGLENS_SUPABASE_URL",
+    "REGLENS_SUPABASE_ANON_KEY",
+):
+    os.environ[_var] = ""
 
 from app.core.config import get_settings  # noqa: E402
 from app.core.security import get_verifier  # noqa: E402

@@ -1,10 +1,41 @@
+import base64
+import json
 import uuid
 
+import jwt as pyjwt
+import pytest
 from sqlalchemy import delete, select
 
+from app.core.security import HS256Verifier, MultiVerifier
 from app.db.models import Tenant, User
 from app.db.session import get_sessionmaker
-from tests.conftest import mint_token
+from tests.conftest import TEST_SECRET, mint_token
+
+
+def _token_with_alg(alg: str) -> str:
+    """A syntactically-valid JWT whose header advertises `alg` (for routing)."""
+    enc = lambda d: base64.urlsafe_b64encode(json.dumps(d).encode()).rstrip(b"=").decode()  # noqa: E731
+    return f"{enc({'alg': alg, 'typ': 'JWT'})}.{enc({'sub': 'x'})}.sig"
+
+
+class TestMultiVerifier:
+    """Algorithm-aware routing so HS256 dev tokens and an RS256/ES256 Supabase
+    project can both be configured at once."""
+
+    def test_routes_hs256_to_the_secret_verifier(self):
+        mv = MultiVerifier(HS256Verifier(TEST_SECRET, "", "authenticated"), jwks=None)
+        claims = mv.verify(mint_token("multi@reglens.local"))
+        assert claims["email"] == "multi@reglens.local"
+
+    def test_asymmetric_alg_without_jwks_is_rejected(self):
+        mv = MultiVerifier(HS256Verifier(TEST_SECRET, "", "authenticated"), jwks=None)
+        with pytest.raises(pyjwt.InvalidAlgorithmError):
+            mv.verify(_token_with_alg("RS256"))
+
+    def test_unknown_alg_is_rejected(self):
+        mv = MultiVerifier(HS256Verifier(TEST_SECRET, "", "authenticated"), jwks=None)
+        with pytest.raises(pyjwt.InvalidAlgorithmError):
+            mv.verify(_token_with_alg("none"))
 
 
 async def _cleanup_user(email: str) -> None:
