@@ -12,18 +12,12 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://reglens:reglens@localhost:5432/reglens"
     redis_url: str = "redis://localhost:6379/0"
 
-    # Auth — set EITHER the legacy Supabase JWT secret (HS256) OR a JWKS URL
-    # (new Supabase projects: https://<ref>.supabase.co/auth/v1/.well-known/jwks.json)
-    supabase_jwt_secret: str = ""
+    # Auth — Supabase JWKS endpoint for the project, e.g.
+    # https://<ref>.supabase.co/auth/v1/.well-known/jwks.json
+    # Tokens are verified locally against it (RS256/ES256); no per-request hop.
     supabase_jwks_url: str = ""
     supabase_issuer: str = ""  # optional; verified when set
     supabase_audience: str = "authenticated"
-    # Public Supabase project handle, served to the SPA via GET /api/v1/config so
-    # one frontend build works against any backend. The anon key is designed to
-    # be public; NEVER put the service_role key here. When supabase_url is unset,
-    # the SPA shows the local dev-token sign-in instead of the Supabase login.
-    supabase_url: str = ""
-    supabase_anon_key: str = ""
 
     cors_origins: list[str] = ["http://localhost:5173"]
     answer_cache_ttl_seconds: int = 86400

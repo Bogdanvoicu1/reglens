@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { setToken } from "../lib/auth";
-import { type AppConfig, isSupabaseConfigured } from "../lib/config";
-import { getSupabaseClient } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 
 const FEATURES = [
   ["Ask, with citations", "Question the EU AI Act and GDPR; every claim links to the exact article or recital, or it's refused."],
@@ -17,7 +15,7 @@ const BUTTON =
   "w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 py-2.5 text-sm font-semibold text-white " +
   "shadow-lg shadow-blue-900/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none";
 
-function SupabaseLogin({ config }: { config: AppConfig }) {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +25,10 @@ function SupabaseLogin({ config }: { config: AppConfig }) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const supabase = getSupabaseClient(config.supabaseUrl, config.supabaseAnonKey);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) setError(error.message);
-    // On success, App's onAuthStateChange writes the token and flips to the app.
+    // On success, useSession's listener flips the app in — nothing to do here.
   };
 
   return (
@@ -65,46 +62,7 @@ function SupabaseLogin({ config }: { config: AppConfig }) {
   );
 }
 
-function DevTokenLogin({ onAuthed }: { onAuthed: () => void }) {
-  const [value, setValue] = useState("");
-  const valid = value.trim().split(".").length === 3;
-
-  return (
-    <div className={CARD}>
-      <label className="mb-2 block text-sm font-medium text-zinc-300">Access token</label>
-      <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        rows={4}
-        placeholder="Paste your JWT…"
-        className="mb-2 w-full resize-none rounded-xl border border-white/10 bg-zinc-950/80 p-3
-                   font-mono text-xs text-zinc-300 placeholder:text-zinc-600
-                   focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-      />
-      <p className="mb-5 text-xs leading-relaxed text-zinc-500">
-        Local dev — mint a token:{" "}
-        <code className="rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-zinc-400">
-          uv run python scripts/dev_token.py
-        </code>
-      </p>
-      <button
-        disabled={!valid}
-        onClick={() => {
-          setToken(value);
-          onAuthed();
-        }}
-        className={BUTTON}
-      >
-        Continue
-      </button>
-      <p className="mt-4 text-center text-[11px] text-zinc-600">
-        Regulatory information, not legal advice.
-      </p>
-    </div>
-  );
-}
-
-export function TokenGate({ config, onAuthed }: { config: AppConfig; onAuthed: () => void }) {
+export function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 p-6">
       <div
@@ -144,11 +102,7 @@ export function TokenGate({ config, onAuthed }: { config: AppConfig; onAuthed: (
           </ul>
         </div>
 
-        {isSupabaseConfigured(config) ? (
-          <SupabaseLogin config={config} />
-        ) : (
-          <DevTokenLogin onAuthed={onAuthed} />
-        )}
+        <LoginForm />
       </div>
     </div>
   );

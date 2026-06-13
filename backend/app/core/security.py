@@ -1,13 +1,11 @@
-"""Authentication: Supabase-compatible JWT verification + JIT tenant provisioning.
+"""Authentication: Supabase JWT verification (JWKS) + JIT tenant provisioning.
 
-Two verifier strategies, chosen by configuration:
-- HS256 with the project's JWT secret (legacy Supabase, also local dev tokens)
-- JWKS with asymmetric keys (new Supabase projects); keys are fetched and
-  cached by PyJWKClient
-
-On a user's first authenticated request we provision a personal tenant and a
-user row keyed by the token's `sub`. A `tenant_id` in `app_metadata` (set via
-Supabase admin) overrides this and attaches the user to an existing tenant.
+Supabase signs each project's JWTs with asymmetric keys; we verify them locally
+against the project's JWKS endpoint (keys fetched and cached by PyJWKClient), so
+there is no per-request round-trip to Supabase. On a user's first authenticated
+request we provision a personal tenant and a user row keyed by the token's `sub`.
+A `tenant_id` in `app_metadata` (set via Supabase admin) instead attaches the
+user to an existing tenant.
 """
 
 import uuid
@@ -41,25 +39,11 @@ class AuthContext:
     role: str
 
 
-class HS256Verifier:
-    def __init__(self, secret: str, issuer: str, audience: str) -> None:
-        self._secret = secret
-        self._issuer = issuer or None
-        self._audience = audience
-
-    def verify(self, token: str) -> dict[str, Any]:
-        return jwt.decode(
-            token,
-            self._secret,
-            algorithms=["HS256"],
-            audience=self._audience,
-            issuer=self._issuer,
-            leeway=_LEEWAY_SECONDS,
-            options={"require": ["exp", "sub"], "verify_iss": bool(self._issuer)},
-        )
-
-
 class JWKSVerifier:
+    """Verifies a Supabase JWT against the project's JWKS endpoint. Algorithms
+    are pinned to the asymmetric set, so a symmetric (HS256) token can never be
+    accepted by passing a public key as a shared secret."""
+
     def __init__(self, jwks_url: str, issuer: str, audience: str) -> None:
         self._jwk_client = jwt.PyJWKClient(jwks_url, cache_keys=True, lifespan=300)
         self._issuer = issuer or None
@@ -78,52 +62,16 @@ class JWKSVerifier:
         )
 
 
-class MultiVerifier:
-    """Routes a token to the right verifier by its declared algorithm, so an
-    HS256 secret (legacy projects, local dev tokens) and a JWKS endpoint (new
-    Supabase projects signing RS256/ES256) can both be configured at once.
-    Routing is by the unverified `alg` header only; each verifier still pins its
-    own algorithms and key, so this does not enable an algorithm-confusion
-    downgrade."""
-
-    def __init__(self, hs256: "HS256Verifier | None", jwks: "JWKSVerifier | None") -> None:
-        self._hs256 = hs256
-        self._jwks = jwks
-
-    def verify(self, token: str) -> dict[str, Any]:
-        alg = jwt.get_unverified_header(token).get("alg", "")
-        if alg == "HS256" and self._hs256 is not None:
-            return self._hs256.verify(token)
-        if alg in ("RS256", "ES256") and self._jwks is not None:
-            return self._jwks.verify(token)
-        raise jwt.InvalidAlgorithmError(f"no verifier configured for token alg {alg!r}")
-
-
 @lru_cache
-def get_verifier() -> HS256Verifier | JWKSVerifier | MultiVerifier:
+def get_verifier() -> JWKSVerifier:
     settings: Settings = get_settings()
-    hs256 = (
-        HS256Verifier(
-            settings.supabase_jwt_secret, settings.supabase_issuer, settings.supabase_audience
+    if not settings.supabase_jwks_url:
+        raise AuthConfigurationError(
+            "Set REGLENS_SUPABASE_JWKS_URL to enable auth "
+            "(https://<ref>.supabase.co/auth/v1/.well-known/jwks.json)"
         )
-        if settings.supabase_jwt_secret
-        else None
-    )
-    jwks = (
-        JWKSVerifier(
-            settings.supabase_jwks_url, settings.supabase_issuer, settings.supabase_audience
-        )
-        if settings.supabase_jwks_url
-        else None
-    )
-    if hs256 and jwks:
-        return MultiVerifier(hs256, jwks)
-    if hs256:
-        return hs256
-    if jwks:
-        return jwks
-    raise AuthConfigurationError(
-        "Set REGLENS_SUPABASE_JWT_SECRET or REGLENS_SUPABASE_JWKS_URL to enable auth"
+    return JWKSVerifier(
+        settings.supabase_jwks_url, settings.supabase_issuer, settings.supabase_audience
     )
 
 

@@ -1,41 +1,30 @@
-import base64
-import json
+import time
 import uuid
 
-import jwt as pyjwt
+import jwt
 import pytest
 from sqlalchemy import delete, select
 
-from app.core.security import HS256Verifier, MultiVerifier
+from app.core.security import get_verifier
 from app.db.models import Tenant, User
 from app.db.session import get_sessionmaker
-from tests.conftest import TEST_SECRET, mint_token
+from tests.conftest import WRONG_KEY, mint_token
 
 
-def _token_with_alg(alg: str) -> str:
-    """A syntactically-valid JWT whose header advertises `alg` (for routing)."""
-    enc = lambda d: base64.urlsafe_b64encode(json.dumps(d).encode()).rstrip(b"=").decode()  # noqa: E731
-    return f"{enc({'alg': alg, 'typ': 'JWT'})}.{enc({'sub': 'x'})}.sig"
+class TestJWKSVerifier:
+    """Tokens are verified against the project's JWKS signing keys, with the
+    accepted algorithms pinned to the asymmetric set."""
 
-
-class TestMultiVerifier:
-    """Algorithm-aware routing so HS256 dev tokens and an RS256/ES256 Supabase
-    project can both be configured at once."""
-
-    def test_routes_hs256_to_the_secret_verifier(self):
-        mv = MultiVerifier(HS256Verifier(TEST_SECRET, "", "authenticated"), jwks=None)
-        claims = mv.verify(mint_token("multi@reglens.local"))
-        assert claims["email"] == "multi@reglens.local"
-
-    def test_asymmetric_alg_without_jwks_is_rejected(self):
-        mv = MultiVerifier(HS256Verifier(TEST_SECRET, "", "authenticated"), jwks=None)
-        with pytest.raises(pyjwt.InvalidAlgorithmError):
-            mv.verify(_token_with_alg("RS256"))
-
-    def test_unknown_alg_is_rejected(self):
-        mv = MultiVerifier(HS256Verifier(TEST_SECRET, "", "authenticated"), jwks=None)
-        with pytest.raises(pyjwt.InvalidAlgorithmError):
-            mv.verify(_token_with_alg("none"))
+    def test_rejects_symmetric_alg_token(self):
+        # Even with a JWKS key available, an HS256 token must be refused: pinning
+        # the algorithms stops a public key from being replayed as an HMAC secret.
+        hs = jwt.encode(
+            {"sub": str(uuid.uuid4()), "exp": int(time.time()) + 3600, "aud": "authenticated"},
+            "x" * 32,  # ≥32 bytes so PyJWT doesn't warn about the (irrelevant) key length
+            algorithm="HS256",
+        )
+        with pytest.raises(jwt.InvalidAlgorithmError):
+            get_verifier().verify(hs)
 
 
 async def _cleanup_user(email: str) -> None:
@@ -67,7 +56,7 @@ class TestAuthRejection:
         assert "ExpiredSignature" in resp.json()["detail"]
 
     async def test_wrong_signature(self, client):
-        token = mint_token(secret="wrong-secret")
+        token = mint_token(key=WRONG_KEY)
         resp = await client.get(
             "/api/v1/conversations", headers={"Authorization": f"Bearer {token}"}
         )
@@ -110,18 +99,10 @@ class TestProvisioning:
             await _cleanup_user(email)
 
     async def test_unknown_tenant_claim_rejected(self, client, db_available):
-        import jwt as pyjwt
-
-        from tests.conftest import TEST_SECRET
-
-        claims = {
-            "sub": str(uuid.uuid4()),
-            "email": "tenantclaim@reglens.local",
-            "aud": "authenticated",
-            "exp": 4102444800,
-            "app_metadata": {"tenant_id": str(uuid.uuid4())},
-        }
-        token = pyjwt.encode(claims, TEST_SECRET, algorithm="HS256")
+        token = mint_token(
+            "tenantclaim@reglens.local",
+            app_metadata={"tenant_id": str(uuid.uuid4())},
+        )
         resp = await client.get(
             "/api/v1/conversations", headers={"Authorization": f"Bearer {token}"}
         )

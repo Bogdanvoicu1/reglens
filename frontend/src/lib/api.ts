@@ -1,4 +1,4 @@
-import { clearToken, getToken } from "./auth";
+import { getAccessToken } from "./auth";
 import type {
   AssessmentReport,
   AssessmentSummary,
@@ -17,7 +17,7 @@ export class ApiError extends Error {
 }
 
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = getToken();
+  const token = await getAccessToken();
   const resp = await fetch(path, {
     ...init,
     headers: {
@@ -26,19 +26,9 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
       ...init.headers,
     },
   });
-  if (resp.status === 401) {
-    clearToken();
-    // Reload to the sign-in screen, but never more than once in a short window:
-    // a token source that keeps re-supplying a rejected token (e.g. a Supabase
-    // session the backend can't verify) would otherwise cause an infinite
-    // reload loop. After the guard trips, the 401 surfaces as an error instead.
-    const REAUTH_KEY = "reglens.reauth-at";
-    const last = Number(sessionStorage.getItem(REAUTH_KEY) || 0);
-    if (Date.now() - last > 5000) {
-      sessionStorage.setItem(REAUTH_KEY, String(Date.now()));
-      window.location.reload();
-    }
-  }
+  // A 401 surfaces as an ApiError; supabase-js refreshes tokens in the
+  // background and useSession() drops the app to the login screen if the
+  // session is truly gone, so there's nothing to force here.
   if (!resp.ok && resp.headers.get("content-type")?.includes("json")) {
     const body = await resp.json().catch(() => ({}));
     throw new ApiError(resp.status, body.detail ?? resp.statusText);

@@ -30,14 +30,16 @@ observability. See [docs/DESIGN.md](docs/DESIGN.md) and
 ```bash
 docker compose up -d            # postgres+pgvector, redis, api, prometheus, grafana
 cd backend
-cp .env.example .env            # add your OpenRouter (or OpenAI-compatible) API key
+cp .env.example .env            # add your OpenRouter API key + Supabase JWKS URL
 uv sync
 uv run alembic upgrade head     # apply migrations
 uv run python -m app.cli ingest ai-act gdpr   # fetch, parse, chunk, embed, store
 uv run uvicorn app.main:app --reload
 
 
-cd ../frontend && npm install && npm run dev   # SPA on http://localhost:5173
+cd ../frontend
+cp .env.example .env            # add your Supabase URL + anon key
+npm install && npm run dev      # SPA on http://localhost:5173
 ```
 
 Or run the whole stack containerized: `docker compose up -d --build` serves
@@ -51,32 +53,31 @@ configured provider, and stores everything transactionally. Use
 
 ### Authentication
 
-The API always verifies a Supabase-compatible JWT — either HS256 with
-`REGLENS_SUPABASE_JWT_SECRET` (legacy projects, local dev) or asymmetric keys
-via `REGLENS_SUPABASE_JWKS_URL` (new Supabase projects). A user's first
-authenticated request just-in-time provisions a personal tenant; an
-`app_metadata.tenant_id` claim attaches users to an existing workspace instead.
-Tenant isolation is enforced in the repository layer, so Supabase is only the
-identity provider — every account's history and data live in this app's own
-Postgres, keyed by the token's subject.
+The API verifies a Supabase JWT on every request, locally against the project's
+JWKS endpoint (`REGLENS_SUPABASE_JWKS_URL`) — asymmetric keys, so there's no
+per-request round-trip to Supabase. A user's first authenticated request
+just-in-time provisions a personal tenant; an `app_metadata.tenant_id` claim
+attaches users to an existing workspace instead. Tenant isolation is enforced in
+the repository layer, so Supabase is only the identity provider — every
+account's history and data live in this app's own Postgres, keyed by the token's
+subject.
 
-The SPA picks its sign-in screen from `GET /api/v1/config` (a public endpoint
-exposing only the Supabase URL + **anon** key — never the service-role key), so
-one frontend build works against any backend:
+The SPA signs in with Supabase email/password; supabase-js owns the session
+(persisted and auto-refreshed) and the API client reads the current access token
+on demand for the bearer header. Point both halves at one project:
 
-- **Production** — set `REGLENS_SUPABASE_URL` and `REGLENS_SUPABASE_ANON_KEY`
-  (plus the JWKS URL or JWT secret for verification). The SPA renders a real
-  email/password login, stores the Supabase access token, and refreshes it via
-  `onAuthStateChange`. Create accounts in the Supabase dashboard (or enable
-  sign-up there).
-- **Local dev** — leave those unset. The SPA shows a dev-token sign-in; mint a
-  token with no Supabase project at all:
+- **Backend** (`backend/.env`): `REGLENS_SUPABASE_JWKS_URL` (and optionally
+  `REGLENS_SUPABASE_ISSUER`).
+- **Frontend** (`frontend/.env`): `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_ANON_KEY` — both browser-safe; never the service-role key.
+
+Create accounts in the Supabase dashboard (or enable sign-up there); a free
+project runs the whole stack locally. To call the API directly, pass a user's
+access token:
 
 ```bash
-uv run python scripts/dev_token.py --email you@example.com   # prints a JWT to paste
-# or hit the API directly:
 curl -N localhost:8000/api/v1/chat \
-  -H "Authorization: Bearer <token>" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer <access-token>" -H 'Content-Type: application/json' \
   -d '{"question":"Which AI practices are prohibited?"}'
 ```
 
