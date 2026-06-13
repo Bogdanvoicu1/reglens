@@ -16,6 +16,7 @@ from typing import Annotated, Any
 import jwt
 import structlog
 from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
@@ -89,25 +90,46 @@ async def _provision(session: AsyncSession, claims: dict[str, Any]) -> AuthConte
     except ValueError as exc:
         raise _unauthorized("Token subject is not a valid user id") from exc
 
-    email = claims.get("email")
     user = await session.get(User, user_id)
     if user is None:
-        app_meta = claims.get("app_metadata") or {}
-        tenant_id = None
-        if app_meta.get("tenant_id"):
-            tenant_id = uuid.UUID(str(app_meta["tenant_id"]))
-            if await session.get(Tenant, tenant_id) is None:
-                raise _unauthorized("Token references an unknown tenant")
-        if tenant_id is None:
-            tenant = Tenant(name=email or f"workspace-{str(user_id)[:8]}")
-            session.add(tenant)
-            await session.flush()
-            tenant_id = tenant.id
-        user = User(id=user_id, tenant_id=tenant_id, email=email)
-        session.add(user)
-        await session.commit()
-        log.info("user_provisioned", user_id=str(user_id), tenant_id=str(tenant_id))
+        user = await _provision_user(session, user_id, claims)
     return AuthContext(user_id=user.id, tenant_id=user.tenant_id, email=user.email, role=user.role)
+
+
+async def _provision_user(
+    session: AsyncSession, user_id: uuid.UUID, claims: dict[str, Any]
+) -> User:
+    """Create the user row (and a personal tenant unless the token names one).
+
+    A brand-new user's first page load fires several authenticated requests at
+    once; they all see no user and race to insert the same row, so one wins and
+    the rest hit a duplicate-key error. Recover by rolling back and adopting the
+    row that landed, so every concurrent request still succeeds.
+    """
+    email = claims.get("email")
+    app_meta = claims.get("app_metadata") or {}
+    tenant_id = None
+    if app_meta.get("tenant_id"):
+        tenant_id = uuid.UUID(str(app_meta["tenant_id"]))
+        if await session.get(Tenant, tenant_id) is None:
+            raise _unauthorized("Token references an unknown tenant")
+    if tenant_id is None:
+        tenant = Tenant(name=email or f"workspace-{str(user_id)[:8]}")
+        session.add(tenant)
+        await session.flush()
+        tenant_id = tenant.id
+    user = User(id=user_id, tenant_id=tenant_id, email=email)
+    session.add(user)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        existing = await session.get(User, user_id)
+        if existing is None:
+            raise
+        return existing
+    log.info("user_provisioned", user_id=str(user_id), tenant_id=str(tenant_id))
+    return user
 
 
 async def get_current_user(

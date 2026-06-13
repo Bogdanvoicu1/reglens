@@ -1,3 +1,4 @@
+import asyncio
 import time
 import uuid
 
@@ -98,6 +99,25 @@ class TestProvisioning:
         finally:
             await _cleanup_user(email)
 
+    async def test_concurrent_first_requests_provision_once(self, client, db_available):
+        # A new user's first page load fires several authenticated requests at
+        # once; the JIT provisioning must not race itself into a duplicate-key
+        # 500 — every request succeeds and exactly one user/tenant is created.
+        email = f"race-{uuid.uuid4().hex[:8]}@reglens.local"
+        headers = {"Authorization": f"Bearer {mint_token(email)}"}
+        try:
+            results = await asyncio.gather(
+                client.get("/api/v1/conversations", headers=headers),
+                client.get("/api/v1/corpora", headers=headers),
+                client.get("/api/v1/assessments", headers=headers),
+            )
+            assert [r.status_code for r in results] == [200, 200, 200]
+            async with get_sessionmaker()() as session:
+                users = (await session.scalars(select(User).where(User.email == email))).all()
+                assert len(users) == 1
+        finally:
+            await _cleanup_user(email)
+
     async def test_unknown_tenant_claim_rejected(self, client, db_available):
         token = mint_token(
             "tenantclaim@reglens.local",
@@ -124,6 +144,7 @@ class TestTenantIsolation:
 
             async with get_sessionmaker()() as session:
                 user_a = await session.scalar(select(User).where(User.email == email_a))
+                assert user_a is not None
                 conv = Conversation(tenant_id=user_a.tenant_id, user_id=user_a.id, title="secret")
                 session.add(conv)
                 await session.commit()
