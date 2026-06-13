@@ -113,5 +113,10 @@ limit; report renders end-to-end with a correct priority taxonomy).
 timeline, clarification panel, full report view with gap badges + citations
 + remediation roadmap + authenticated markdown download; Playwright-verified
 end-to-end).
-Next: A4 — evals & hardening (per-rule gates, blocker-recall hard gate,
-injection red-team scenarios, Grafana panel).
+**A4 — Evals & hardening done** (real-engine scenario suite over 28 scenarios
+incl. injection red-team; two-tier safety gate — false-clear rate = 0 hard
+gate plus verdict-accuracy / blocker-recall / injection-resistance quality
+gates; judge-tier model for the prohibited-practice batch; per-assessment
+cost + Grafana panels; wired into the Evals CI workflow).
+v2 assessment agent complete (A0–A4); A5 is backlog. Next: M7 — docs &
+deploy polish.

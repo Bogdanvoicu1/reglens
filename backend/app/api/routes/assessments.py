@@ -2,7 +2,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
@@ -15,6 +15,7 @@ from app.assessments.rulebook import load_rulebook
 from app.core.security import AuthContext, get_current_user
 from app.db.models import Assessment, AssessmentFinding, AssessmentReport
 from app.db.session import get_session
+from app.observability.rag_metrics import record_assessment
 from app.services.rate_limit import assessment_rate_limited_user
 
 router = APIRouter(prefix="/api/v1", tags=["assessments"])
@@ -71,9 +72,25 @@ def _event_stream(
         async for event in run_assessment(
             session, assessment, allow_clarification=allow_clarification
         ):
+            _record_terminal(event.event, event.data)
             yield _sse(event.event, event.data)
 
     return stream()
+
+
+def _record_terminal(event: str, data: dict[str, object]) -> None:
+    """Emit Prometheus metrics for the run's terminal event, best-effort."""
+    if event == "assessment_completed":
+        cost = data.get("cost_usd")
+        record_assessment(
+            "blocked" if data.get("blockers") else "complete",
+            usage=cast("dict[str, int] | None", data.get("usage")),
+            cost_usd=float(cost) if isinstance(cost, int | float) else 0.0,
+        )
+    elif event == "clarification_needed":
+        record_assessment("clarifying")
+    elif event == "error":
+        record_assessment("failed")
 
 
 def _sse_response(stream: AsyncIterator[str]) -> StreamingResponse:

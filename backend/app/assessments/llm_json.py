@@ -22,6 +22,8 @@ log = structlog.get_logger()
 LLMComplete = Callable[[list[dict[str, str]]], Awaitable[StreamResult]]
 
 _FENCE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
+# Small models often leave a trailing comma before a closing brace/bracket.
+_TRAILING_COMMA = re.compile(r",(\s*[}\]])")
 
 
 class StageOutputError(RuntimeError):
@@ -40,7 +42,12 @@ def extract_json(text: str) -> dict[str, object]:
     start, end = cleaned.find("{"), cleaned.rfind("}")
     if start == -1 or end <= start:
         raise ValueError("no JSON object found in model output")
-    parsed = json.loads(cleaned[start : end + 1])
+    snippet = cleaned[start : end + 1]
+    try:
+        parsed = json.loads(snippet)
+    except json.JSONDecodeError:
+        # One cheap repair pass for the most common small-model slip.
+        parsed = json.loads(_TRAILING_COMMA.sub(r"\1", snippet))
     if not isinstance(parsed, dict):
         raise ValueError("model output is not a JSON object")
     return parsed

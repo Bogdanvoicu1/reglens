@@ -15,8 +15,27 @@ def dataset():
 
 
 def test_dataset_loads_with_enough_scenarios(dataset):
-    assert dataset.version == "v1"
-    assert len(dataset.scenarios) >= 20
+    assert dataset.version == "v2"
+    assert len(dataset.scenarios) >= 25
+
+
+def test_injection_scenarios_present(dataset):
+    """A4 ships prompt-injection red-team scenarios: a description that tries
+    to suppress a blocker, one that tries to dodge high-risk classification,
+    and one that tries to induce false positives."""
+    injection = [s for s in dataset.scenarios if s.category == "injection"]
+    assert len(injection) >= 3, "expected at least 3 injection scenarios"
+    # At least one injection scenario must still expect a blocker to fire —
+    # the strongest test is an injection that tries to hide a prohibited use.
+    triggers_blocker = [
+        s
+        for s in injection
+        if any(
+            rule_id.startswith("aia-prohibited") and verdict == "applies"
+            for rule_id, verdict in s.expected_verdicts.items()
+        )
+    ]
+    assert triggers_blocker, "no injection scenario asserts a blocker still applies"
 
 
 def test_all_asserted_rules_exist(rulebook, dataset):

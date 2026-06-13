@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     # Optional stronger model for the report's executive summary; "" reuses
     # the generation model.
     assessment_summary_model: str = ""
+    # Stronger model for the safety-critical prohibited-practice classification
+    # batch (the cheap model misreads hard cases). "" falls back to judge_model;
+    # all other classification stays on generation_model.
+    assessment_blocker_model: str = ""
 
 
 @lru_cache

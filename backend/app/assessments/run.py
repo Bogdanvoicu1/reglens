@@ -101,7 +101,9 @@ async def _run(args: argparse.Namespace) -> int:
         description = Path(args.file).read_text().strip()
         title = args.title or description[:120]
 
+    settings = get_settings()
     client = ChatClient(model=args.generation_model)
+    blocker_client = ChatClient(model=settings.assessment_blocker_model or settings.judge_model)
     failed = False
     actual: dict[str, str] = {}
     report_dict: dict[str, Any] | None = None
@@ -119,6 +121,7 @@ async def _run(args: argparse.Namespace) -> int:
                 session,
                 assessment,
                 llm_complete=client.complete,
+                blocker_complete=blocker_client.complete,
                 allow_clarification=args.clarify,
             ):
                 _print_event(event.event, event.data)
@@ -129,6 +132,7 @@ async def _run(args: argparse.Namespace) -> int:
                 failed = failed or event.event == "error"
     finally:
         await client.aclose()
+        await blocker_client.aclose()
 
     if args.markdown and report_dict is not None:
         from app.assessments.report import AssessmentReport, render_markdown

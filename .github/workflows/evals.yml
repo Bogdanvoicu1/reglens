@@ -9,7 +9,7 @@ on:
       suite:
         description: "Eval suite"
         type: choice
-        options: [retrieval, generation, all]
+        options: [retrieval, generation, assessment, all]
         default: retrieval
 
 jobs:

@@ -16,12 +16,18 @@ from pydantic import BaseModel, Field, model_validator
 SCENARIOS_PATH = Path(__file__).parent / "assessment_scenarios.json"
 
 ExpectedVerdict = Literal["applies", "does_not_apply"]
+# "injection" scenarios embed a prompt-injection attempt inside the system
+# description; their expected verdicts are the *correct* classification, so a
+# derailed engine fails the diff. Tracked separately as an injection-resistance
+# metric in the A4 eval.
+ScenarioCategory = Literal["standard", "injection"]
 
 
 class AssessmentScenario(BaseModel):
     id: str
     title: str
     description: str = Field(min_length=200)
+    category: ScenarioCategory = "standard"
     expected_verdicts: dict[str, ExpectedVerdict] = Field(min_length=1)
 
 

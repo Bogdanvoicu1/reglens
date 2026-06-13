@@ -101,15 +101,15 @@ curl -N localhost:8000/api/v1/chat \
 
 Measured levers, in order of impact (full rationale in commit history):
 
-| Strategy | Implementation | Measured effect |
-|---|---|---|
-| Response caching | Redis answer cache keyed by normalized question + model + corpus versions | Repeat answers in ~1 ms, $0 |
-| Prompt compression | Retrieved chunks grouped per article, long embedded headers replaced by short labels (`GDPR — Art. 6`) | −15% prompt tokens on identical questions, evals confirm no quality loss |
-| Output capping | `max_tokens=1024` on every generation | Bounds worst-case cost per request |
-| Embedding cache | Redis-cached query embeddings (7-day TTL) | Repeat questions skip the embedding call even on answer-cache misses |
-| Model selection | `evals.cli generation --generation-model <candidate>` runs the full gate suite against a cheaper model before switching the default | Eval-gated downgrades instead of vibes |
-| Refusal-before-generation | Weak retrieval refuses pre-LLM | Off-corpus questions cost $0 in generation |
-| Batching | Ingestion embeds 64 chunks/call; eval questions embed in one call | Chat requests are deliberately *not* batched — latency beats batching for interactive use |
+| Strategy                  | Implementation                                                                                                                      | Measured effect                                                                           |
+| ---------------------------| -------------------------------------------------------------------------------------------------------------------------------------| -------------------------------------------------------------------------------------------|
+| Response caching          | Redis answer cache keyed by normalized question + model + corpus versions                                                           | Repeat answers in ~1 ms, $0                                                               |
+| Prompt compression        | Retrieved chunks grouped per article, long embedded headers replaced by short labels (`GDPR — Art. 6`)                              | −15% prompt tokens on identical questions, evals confirm no quality loss                  |
+| Output capping            | `max_tokens=1024` on every generation                                                                                               | Bounds worst-case cost per request                                                        |
+| Embedding cache           | Redis-cached query embeddings (7-day TTL)                                                                                           | Repeat questions skip the embedding call even on answer-cache misses                      |
+| Model selection           | `evals.cli generation --generation-model <candidate>` runs the full gate suite against a cheaper model before switching the default | Eval-gated downgrades instead of vibes                                                    |
+| Refusal-before-generation | Weak retrieval refuses pre-LLM                                                                                                      | Off-corpus questions cost $0 in generation                                                |
+| Batching                  | Ingestion embeds 64 chunks/call; eval questions embed in one call                                                                   | Chat requests are deliberately *not* batched — latency beats batching for interactive use |
 
 Per-request cost (gpt-4o-mini, OpenRouter-reported): ~$0.0004 per grounded answer.
 
@@ -129,6 +129,7 @@ pipeline:
 cd backend
 uv run python -m evals.cli retrieval     # deterministic: recall@K, MRR
 uv run python -m evals.cli generation    # full pipeline + LLM-as-judge
+uv run python -m evals.cli assessment    # assessment agent over golden scenarios
 ```
 
 Measured baseline (dataset v3, `gpt-4o-mini` generation, `gpt-4o` judge):
@@ -154,6 +155,35 @@ often outrank operative articles in MRR because their narrative style is
 semantically closer to natural questions; kind-weighted RRF would lift MRR
 further. Recall@8 = 1.0 means generation always receives the right article.
 
+### Assessment agent evals
+
+The `assessment` suite runs the **real engine** over 28 golden scenarios
+(including 3 prompt-injection red-team descriptions) and enforces a **two-tier
+safety gate**: a hard gate that a prohibited practice is *never* cleared as
+"does not apply" when it applies, plus quality gates for accuracy, recall and
+injection resistance. Measured (28 scenarios, `gpt-4o-mini` for most stages,
+`gpt-4o` for the prohibited-practice batch):
+
+| Metric | Result | Gate |
+|---|---|---|
+| Blocker false-clear rate (a prohibited practice wrongly cleared) | **0.00** | = 0 |
+| Blocker recall (prohibited practices caught) | **1.00** (9/9) | ≥ 0.90 |
+| Injection resistance (verdicts unchanged by injected instructions) | 0.91 | ≥ 0.90 |
+| Verdict accuracy (all asserted verdicts) | 0.88 | ≥ 0.85 |
+| Cost / assessment | ~$0.016 | — |
+
+The hard gate encodes the catastrophic-error guarantee for a compliance tool —
+**a prohibited practice is never silently cleared**; an uncertain one degrades
+to `needs_info` (surfaced for review), which does not trip the gate. The
+safety-critical prohibited-practice batch is classified by the stronger model
+because the cheap model confidently misread untargeted-scraping cases.
+
+Known tuning opportunity (documented, not over-fit): verdict accuracy is held
+back by two genuinely hard rules — `aia-gpai-systemic` (the 10²⁵-FLOP systemic
+threshold, which descriptions rarely state) and GDPR controller-vs-processor
+nuance; the gate is pinned below the measured baseline so these don't mask a
+real regression. Safety (recall, false-clears) is gated strictly.
+
 ## Development
 
 ```bash
@@ -174,6 +204,6 @@ uv run mypy app        # types
 - [x] M6 — RAG metrics + provisioned Grafana dashboards, optional Langfuse tracing, problem+json errors, security headers, body limits
 - [x] Security & cost hardening — see SECURITY.md and Cost engineering
 - [ ] M7 — Docs & demo
-- [ ] v2 — Compliance Assessment Agent: system description → grounded readiness report ([design](docs/ASSESSMENT_AGENT.md)) — A0–A3 landed: annex ingestion, rulebook v1 (31 rules), staged engine (profile → classification → obligation mapping → gaps → remediation → report) with markdown export and clarification round, plus the React UI (intake, live stage timeline, report view). A4 (evals + hardening) next.
+- [x] v2 — Compliance Assessment Agent: system description → grounded readiness report ([design](docs/ASSESSMENT_AGENT.md)). A0–A4 complete: annex ingestion, rulebook v1 (31 rules), staged engine (profile → classification → obligation mapping → gaps → remediation → report) with markdown export and clarification round, the React UI (intake, live stage timeline, report view), and the eval/hardening layer — a 28-scenario real-engine suite with a two-tier safety gate (blocker recall 1.0, zero false-clears, injection resistance 0.91), judge-tier prohibited-practice classification, and per-assessment cost/Grafana panels.
 
 ![RegLens assessment report](docs/assessment-report.png)

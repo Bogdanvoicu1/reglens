@@ -84,6 +84,44 @@
           "legendFormat": "p95"
         }
       ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Assessments by outcome (1h)",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (increase(reglens_assessment_runs_total[1h]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Avg cost / assessment (24h)",
+      "gridPos": { "x": 0, "y": 24, "w": 6, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum(increase(reglens_assessment_cost_usd_sum[24h])) / clamp_min(sum(increase(reglens_assessment_cost_usd_count[24h])), 1)"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Assessments completed (24h)",
+      "gridPos": { "x": 6, "y": 24, "w": 6, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(reglens_assessment_runs_total[24h]))"
+        }
+      ]
     }
   ]
 }

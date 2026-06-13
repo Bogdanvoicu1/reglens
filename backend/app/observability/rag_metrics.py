@@ -28,6 +28,21 @@ CACHE_EVENTS = Counter(
     "Answer cache lookups",
     ["result"],  # hit | miss
 )
+ASSESSMENT_RUNS = Counter(
+    "reglens_assessment_runs_total",
+    "Assessment runs by terminal outcome",
+    ["outcome"],  # complete | blocked | clarifying | failed
+)
+ASSESSMENT_COST = Histogram(
+    "reglens_assessment_cost_usd",
+    "Provider-reported USD cost per completed assessment run",
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.15, 0.25, 0.5),
+)
+ASSESSMENT_TOKENS = Histogram(
+    "reglens_assessment_tokens",
+    "Total tokens per completed assessment run",
+    buckets=(5_000, 10_000, 20_000, 40_000, 80_000, 160_000),
+)
 
 
 def record_chat(outcome: str, latency_s: float, usage: dict | None = None) -> None:
@@ -41,3 +56,22 @@ def record_chat(outcome: str, latency_s: float, usage: dict | None = None) -> No
         # OpenRouter reports per-request cost; OpenAI-direct responses won't.
         if usage.get("cost"):
             LLM_COST.inc(float(usage["cost"]))
+
+
+def record_assessment(
+    outcome: str, *, usage: dict[str, int] | None = None, cost_usd: float = 0.0
+) -> None:
+    """Record one assessment run's terminal outcome and (when completed) its
+    token/cost footprint. Token and cost totals also feed the shared LLM spend
+    counters so dashboards reflect total spend across chat and assessments."""
+    ASSESSMENT_RUNS.labels(outcome).inc()
+    if usage:
+        if usage.get("total_tokens"):
+            ASSESSMENT_TOKENS.observe(usage["total_tokens"])
+        if usage.get("prompt_tokens"):
+            LLM_TOKENS.labels("prompt").inc(usage["prompt_tokens"])
+        if usage.get("completion_tokens"):
+            LLM_TOKENS.labels("completion").inc(usage["completion_tokens"])
+    if cost_usd:
+        ASSESSMENT_COST.observe(cost_usd)
+        LLM_COST.inc(cost_usd)

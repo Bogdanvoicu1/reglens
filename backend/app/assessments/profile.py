@@ -48,7 +48,9 @@ data on others' instructions, public authority, etc. State for whose \
 purposes the data is processed.",
   "ai_capabilities": "whether and how the system uses AI/ML/LLMs (incl. \
 third-party models it builds on): techniques, what it infers or generates, \
-how automatically it operates",
+how automatically it operates, and — when the description states it — HOW the \
+system obtains or builds its data and models (e.g. scraping or crawling \
+images/text from the internet or CCTV, datasets collected, training sources)",
   "eu_nexus": "EU presence: placed on the EU market, used in the EU, EU \
 users or data subjects, geo-restrictions",
   "personal_data": "categories of personal data processed, incl. any \

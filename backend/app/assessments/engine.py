@@ -58,9 +58,12 @@ class AssessmentEvent:
     data: dict[str, object]
 
 
-def _add_usage(total: dict[str, int], usage: dict[str, int]) -> None:
+def _add_usage(total: dict[str, int], usage: dict[str, int]) -> float:
+    """Accumulate token counts into `total`; return this call's USD cost.
+    OpenRouter reports a per-call `cost`; other providers may omit it."""
     for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
         total[key] = total.get(key, 0) + (usage.get(key) or 0)
+    return float(usage.get("cost") or 0.0)
 
 
 def _humanize_question(question: str) -> str:
@@ -127,6 +130,7 @@ async def run_assessment(
     assessment: Assessment,
     *,
     llm_complete: LLMComplete | None = None,
+    blocker_complete: LLMComplete | None = None,
     rulebook: Rulebook | None = None,
     allow_clarification: bool = False,
 ) -> AsyncIterator[AssessmentEvent]:
@@ -134,15 +138,28 @@ async def run_assessment(
     settings = get_settings()
     own_client: ChatClient | None = None
     own_summary_client: ChatClient | None = None
+    own_blocker_client: ChatClient | None = None
     if llm_complete is None:
         own_client = ChatClient()
         llm_complete = own_client.complete
+        # Prohibited-practice detection is the safety-critical call and needs
+        # reasoning the cheap model can't reliably do (e.g. recognising that an
+        # 800M-template database built from public internet images is untargeted
+        # scraping); route just that batch to the stronger model.
+        if blocker_complete is None:
+            own_blocker_client = ChatClient(
+                model=settings.assessment_blocker_model or settings.judge_model
+            )
+            blocker_complete = own_blocker_client.complete
+    # When a caller injects only llm_complete (tests, plain eval), reuse it.
+    blocker_complete = blocker_complete or llm_complete
     summary_complete = llm_complete
     if own_client is not None and settings.assessment_summary_model:
         own_summary_client = ChatClient(model=settings.assessment_summary_model)
         summary_complete = own_summary_client.complete
 
     total_usage: dict[str, int] = {}
+    total_cost = 0.0
     try:
         assessment.status = "running"
         assessment.corpus_fingerprint = await corpus_fingerprint(session, None)
@@ -153,7 +170,7 @@ async def run_assessment(
         yield AssessmentEvent("stage_started", {"stage": "profile_extraction"})
         already_answered = bool((assessment.clarification or {}).get("answers"))
         profile, usage = await extract_profile(llm_complete, _effective_description(assessment))
-        _add_usage(total_usage, usage)
+        total_cost += _add_usage(total_usage, usage)
         assessment.system_profile = profile.model_dump()
         await _reset_findings(session, assessment.id)
         session.add(
@@ -192,10 +209,14 @@ async def run_assessment(
                 runnable, skipped = split_runnable(batch_rules, verdict_map)
                 batch_findings = list(skipped)
                 if runnable:
+                    is_blocker_batch = any(r.on_applies.severity == "blocker" for r in runnable)
                     classified, usage = await classify_batch(
-                        session, llm_complete, runnable, profile
+                        session,
+                        blocker_complete if is_blocker_batch else llm_complete,
+                        runnable,
+                        profile,
                     )
-                    _add_usage(total_usage, usage)
+                    total_cost += _add_usage(total_usage, usage)
                     batch_findings.extend(classified)
                 for finding in batch_findings:
                     session.add(_classification_row(assessment.id, finding, ord_))
@@ -247,7 +268,7 @@ async def run_assessment(
         # Stage 4 — gap analysis
         yield AssessmentEvent("stage_started", {"stage": "gap_analysis"})
         gaps, usage = await analyse_gaps(llm_complete, mapped, profile)
-        _add_usage(total_usage, usage)
+        total_cost += _add_usage(total_usage, usage)
         gap_by_id = {g.obligation_id: g for g in gaps}
         for m in mapped:
             gap = gap_by_id[m.obligation.id]
@@ -275,7 +296,7 @@ async def run_assessment(
         yield AssessmentEvent("stage_started", {"stage": "remediation"})
         needs = collect_needs([(b.rule_id, b.title) for b in blockers], mapped, gaps)
         remediation, usage = await plan_remediation(llm_complete, needs)
-        _add_usage(total_usage, usage)
+        total_cost += _add_usage(total_usage, usage)
 
         # Stage 6 — report assembly + executive summary + markdown
         yield AssessmentEvent("stage_started", {"stage": "report"})
@@ -293,7 +314,7 @@ async def run_assessment(
             executive_summary="",
         )
         report.executive_summary, usage = await generate_executive_summary(summary_complete, report)
-        _add_usage(total_usage, usage)
+        total_cost += _add_usage(total_usage, usage)
         markdown = render_markdown(report)
         version = await _next_report_version(session, assessment.id)
         session.add(
@@ -316,6 +337,7 @@ async def run_assessment(
             blockers=[b.rule_id for b in blockers],
             report_version=version,
             usage=total_usage,
+            cost_usd=round(total_cost, 6),
         )
         yield AssessmentEvent("report_ready", {"version": version, "report": report.model_dump()})
         yield AssessmentEvent(
@@ -328,6 +350,7 @@ async def run_assessment(
                 "blockers": [b.rule_id for b in blockers],
                 "report_version": version,
                 "usage": total_usage,
+                "cost_usd": round(total_cost, 6),
             },
         )
     except Exception:
@@ -343,6 +366,8 @@ async def run_assessment(
             await own_client.aclose()
         if own_summary_client is not None:
             await own_summary_client.aclose()
+        if own_blocker_client is not None:
+            await own_blocker_client.aclose()
 
 
 async def _reset_findings(session: AsyncSession, assessment_id: uuid.UUID) -> None:
