@@ -4,9 +4,9 @@ import { type AppConfig, isSupabaseConfigured } from "../lib/config";
 import { getSupabaseClient } from "../lib/supabase";
 
 const FEATURES = [
-  ["Cited answers", "Every claim links to the exact article or recital."],
-  ["Honest refusals", "Out-of-corpus questions are refused, not improvised."],
-  ["Eval-gated quality", "Faithfulness 0.99 · refusal accuracy 1.00 on a versioned golden dataset."],
+  ["Ask, with citations", "Question the EU AI Act and GDPR; every claim links to the exact article or recital, or it's refused."],
+  ["Readiness assessments", "Describe your AI system — get a grounded report: risk classification, obligations, gap analysis and a remediation roadmap."],
+  ["Eval- & safety-gated", "Faithfulness 1.00 on a versioned golden dataset; prohibited-practice detection never silently clears."],
 ];
 
 const CARD = "rounded-2xl border border-white/10 bg-zinc-900/70 p-6 shadow-2xl shadow-black/40 backdrop-blur";
@@ -128,8 +128,9 @@ export function TokenGate({ config, onAuthed }: { config: AppConfig; onAuthed: (
             .
           </h1>
           <p className="mb-8 text-sm leading-relaxed text-zinc-400">
-            Grounded Q&A over the EU AI Act and GDPR. Hybrid retrieval, citation-validated
-            generation, multi-tenant — built as a production RAG system, not a demo.
+            Grounded Q&A <span className="text-zinc-300">and compliance readiness reports</span>{" "}
+            over the EU AI Act and GDPR — hybrid retrieval, citation-validated generation, and a
+            typed assessment agent, multi-tenant and eval-gated.
           </p>
           <ul className="space-y-3">
             {FEATURES.map(([title, body]) => (
