@@ -18,6 +18,15 @@ from app.assessments.rulebook import load_rulebook
 from app.services.llm import StreamResult
 
 RULE_ID_RE = re.compile(r"- rule_id: ([a-z0-9-]+)")
+OB_ID_RE = re.compile(r"(?m)^- obligation_id: ([a-z0-9-]+)$")
+NEED_KEY_RE = re.compile(r"(?m)^- key: ([a-z0-9-]+)$")
+
+
+def _unique_email(prefix: str) -> str:
+    # Fresh tenant per test run: the assessment rate-limit window is a full
+    # day, so reusing a fixed email would let ZSET entries leak across runs.
+    return f"{prefix}-{uuid.uuid4().hex[:10]}@reglens.local"
+
 
 PROFILE = {
     "summary": "A stub system for tests.",
@@ -245,30 +254,52 @@ def make_stub_llm(
     applies: set[str] = frozenset({"gdpr-applies"}),
     broken_groups=(),
     citation_for: dict[str, str] | None = None,
+    gap_status: str = "missing",
 ):
-    """Profile call returns a canned profile; classification calls answer
-    `applies` for the given rules (with a valid citation) and
-    does_not_apply otherwise. Batches whose prompt mentions a broken group's
-    rule return garbage to exercise the degradation path."""
+    """Deterministic stub covering every stage, dispatched on the system
+    prompt: profile → canned PROFILE; classification → `applies` for the named
+    rules (with a valid citation) else does_not_apply (garbage for a broken
+    group); gap analysis → `gap_status` for each obligation; remediation → one
+    item covering all need keys; executive summary → prose."""
     citation_for = citation_for or {"gdpr-applies": "(gdpr) Art. 2"}
 
     async def llm(messages):
-        if messages[0]["content"].startswith("You extract"):
+        system = messages[0]["content"]
+        user = messages[1]["content"] if len(messages) > 1 else ""
+        if system.startswith("You extract"):
             return StreamResult(text=json.dumps(PROFILE), usage={"total_tokens": 11})
-        rule_ids = RULE_ID_RE.findall(messages[1]["content"])
-        if any(rid in broken_groups for rid in rule_ids):
-            return StreamResult(text="garbage", usage={"total_tokens": 1})
-        verdicts = [
-            {
-                "rule_id": rid,
-                "verdict": "applies" if rid in applies else "does_not_apply",
-                "confidence": 0.9,
-                "reasoning": "stubbed",
-                "citations": [citation_for[rid]] if rid in applies else [],
+        if system.startswith("You classify"):
+            rule_ids = RULE_ID_RE.findall(user)
+            if any(rid in broken_groups for rid in rule_ids):
+                return StreamResult(text="garbage", usage={"total_tokens": 1})
+            verdicts = [
+                {
+                    "rule_id": rid,
+                    "verdict": "applies" if rid in applies else "does_not_apply",
+                    "confidence": 0.9,
+                    "reasoning": "stubbed",
+                    "citations": [citation_for[rid]] if rid in applies else [],
+                }
+                for rid in rule_ids
+            ]
+            return StreamResult(text=json.dumps({"verdicts": verdicts}), usage={"total_tokens": 7})
+        if system.startswith("You assess whether"):
+            gaps = [
+                {"obligation_id": ob, "status": gap_status, "reasoning": "stubbed"}
+                for ob in OB_ID_RE.findall(user)
+            ]
+            return StreamResult(text=json.dumps({"gaps": gaps}), usage={"total_tokens": 5})
+        if system.startswith("You produce a remediation"):
+            item = {
+                "title": "Stub remediation",
+                "description": "Do the work.",
+                "priority": "high",
+                "effort": "M",
+                "addresses": NEED_KEY_RE.findall(user),
+                "tradeoffs": "Some effort required.",
             }
-            for rid in rule_ids
-        ]
-        return StreamResult(text=json.dumps({"verdicts": verdicts}), usage={"total_tokens": 7})
+            return StreamResult(text=json.dumps({"items": [item]}), usage={"total_tokens": 6})
+        return StreamResult(text="Stub executive summary.", usage={"total_tokens": 4})
 
     return llm
 
@@ -294,7 +325,7 @@ class TestEngine:
         from sqlalchemy import select
 
         from app.assessments.engine import run_assessment
-        from app.db.models import AssessmentFinding
+        from app.db.models import AssessmentFinding, AssessmentReport
         from app.db.session import get_session
 
         async for session in get_session():
@@ -306,6 +337,7 @@ class TestEngine:
             names = [e.event for e in events]
             assert names[0] == "stage_started"
             assert "profile" in names
+            assert "report_ready" in names
             assert names[-1] == "assessment_completed"
             done = events[-1].data
             # gdpr-applies applies; the other 9 GDPR rules + the 2 gate-free
@@ -316,7 +348,10 @@ class TestEngine:
                 "needs_info": 0,
                 "skipped": 19,
             }
+            # gdpr-applies carries no obligations, so nothing to map or gap.
             assert done["blockers"] == []
+            assert done["gap_counts"] == {"met": 0, "partial": 0, "missing": 0, "unknown": 0}
+            assert done["report_version"] == 1
             assert done["usage"]["total_tokens"] > 0
 
             await session.refresh(assessment)
@@ -337,6 +372,13 @@ class TestEngine:
             applied = next(f for f in findings if f.verdict == "applies")
             assert applied.rule_id == "gdpr-applies"
             assert applied.citations == {"sources": [{"corpus": "gdpr", "ref": "Art. 2"}]}
+
+            report = await session.scalar(
+                select(AssessmentReport).where(AssessmentReport.assessment_id == assessment.id)
+            )
+            assert report is not None and report.version == 1
+            assert report.report["executive_summary"] == "Stub executive summary."
+            assert "Compliance Readiness Assessment" in report.markdown
 
             await session.delete(tenant)
             await session.commit()
@@ -507,7 +549,7 @@ class TestAssessmentApi:
 
         monkeypatch.setattr("app.api.routes.assessments.run_assessment", fake_run)
 
-        token = mint_token(email="assess-owner@reglens.local")
+        token = mint_token(email=_unique_email("assess-owner"))
         resp = await client.post(
             "/api/v1/assessments",
             json={"title": "T", "description": "A long enough description " * 5},
@@ -534,9 +576,265 @@ class TestAssessmentApi:
         assert detail.status_code == 200
         assert detail.json()["title"] == "T"
 
-        other = mint_token(email="assess-other@reglens.local")
+        other = mint_token(email=_unique_email("assess-other"))
         foreign = await client.get(
             f"/api/v1/assessments/{assessment_id}",
             headers={"Authorization": f"Bearer {other}"},
         )
         assert foreign.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Obligation mapping (stage 3) — pure, deterministic
+# ---------------------------------------------------------------------------
+
+
+class TestObligationMapping:
+    def test_filters_deployer_obligations_when_not_deployer(self, rulebook):
+        from app.assessments.mapping import map_obligations
+
+        verdicts = {
+            "aia-is-ai-system": "applies",
+            "aia-high-risk-annex3": "applies",
+            "aia-role-provider": "applies",
+            "aia-role-deployer": "does_not_apply",
+        }
+        ids = {m.obligation.id for m in map_obligations(rulebook, verdicts)}
+        assert "aia-art9-risk-management" in ids  # provider duty — kept
+        assert "aia-art26-deployer-duties" not in ids  # deployer duty — dropped
+        assert "aia-art27-fria" not in ids
+
+    def test_audience_unestablished_when_role_needs_info(self, rulebook):
+        from app.assessments.mapping import map_obligations
+
+        verdicts = {
+            "aia-is-ai-system": "applies",
+            "aia-high-risk-annex3": "applies",
+            "aia-role-provider": "needs_info",
+            "aia-role-deployer": "applies",
+        }
+        mapped = {m.obligation.id: m for m in map_obligations(rulebook, verdicts)}
+        assert mapped["aia-art9-risk-management"].audience_established is False
+        assert mapped["aia-art26-deployer-duties"].audience_established is True
+
+    def test_blocker_obligation_takes_blocker_severity(self, rulebook):
+        from app.assessments.mapping import map_obligations
+
+        verdicts = {"aia-is-ai-system": "applies", "aia-prohibited-subliminal": "applies"}
+        mapped = {m.obligation.id: m for m in map_obligations(rulebook, verdicts)}
+        assert mapped["aia-art5-cease"].severity == "blocker"
+
+    def test_any_audience_always_included(self, rulebook):
+        from app.assessments.mapping import map_obligations
+
+        verdicts = {"gdpr-applies": "applies", "gdpr-role-controller": "applies"}
+        ids = {m.obligation.id for m in map_obligations(rulebook, verdicts)}
+        assert "gdpr-art30-ropa" in ids  # audience "any"
+
+    def test_no_obligations_without_carrying_rules(self, rulebook):
+        from app.assessments.mapping import map_obligations
+
+        assert map_obligations(rulebook, {"gdpr-applies": "applies"}) == []
+
+
+class TestRemediation:
+    def test_clamp_downgrades_blocker_priority_without_blocker_need(self):
+        from app.assessments.remediation import RemediationItem, _clamp_priorities
+
+        items = [
+            RemediationItem(
+                title="t",
+                description="d",
+                priority="blocker",
+                effort="M",
+                addresses=["gdpr-art30-ropa"],
+                tradeoffs="x",
+            )
+        ]
+        _clamp_priorities(items, blocker_keys=set())
+        assert items[0].priority == "high"
+
+    async def test_synthesis_covers_every_need_and_keeps_real_blocker(self):
+        from app.assessments.remediation import RemediationNeed, plan_remediation
+
+        async def failing_llm(messages):
+            return StreamResult(text="not json")
+
+        needs = [
+            RemediationNeed(
+                "aia-prohibited-emotion-workplace", "blocker", "Emotion", "d", "blocker"
+            ),
+            RemediationNeed("gdpr-art35-dpia", "obligation", "DPIA", "[missing] ...", "pre-market"),
+        ]
+        items, usage = await plan_remediation(failing_llm, needs)
+        addressed = {k for item in items for k in item.addresses}
+        assert {"aia-prohibited-emotion-workplace", "gdpr-art35-dpia"} <= addressed
+        blocker_item = next(i for i in items if "aia-prohibited-emotion-workplace" in i.addresses)
+        assert blocker_item.priority == "blocker"
+        assert usage == {}
+
+
+class TestReportPipeline:
+    async def test_obligations_gaps_remediation_and_report(self, corpus_available):
+        from sqlalchemy import select
+
+        from app.assessments.engine import run_assessment
+        from app.db.models import AssessmentReport
+        from app.db.session import get_session
+
+        stub = make_stub_llm(
+            applies={"aia-is-ai-system", "aia-high-risk-annex3", "aia-role-provider"},
+            citation_for={
+                "aia-is-ai-system": "(ai-act) Art. 3",
+                "aia-high-risk-annex3": "(ai-act) Annex III",
+                "aia-role-provider": "(ai-act) Art. 3",
+            },
+            gap_status="missing",
+        )
+        async for session in get_session():
+            tenant, assessment = await _make_assessment(session)
+            events = [e async for e in run_assessment(session, assessment, llm_complete=stub)]
+            done = events[-1].data
+            assert done["status"] == "complete"
+            assert done["gap_counts"]["missing"] > 0
+
+            report = await session.scalar(
+                select(AssessmentReport).where(AssessmentReport.assessment_id == assessment.id)
+            )
+            rep = report.report
+            ob_ids = {o["id"] for o in rep["obligations"]}
+            assert "aia-art9-risk-management" in ob_ids  # provider duty present
+            assert "aia-art26-deployer-duties" not in ob_ids  # deployer duty filtered
+            assert rep["gap_counts"]["missing"] == len(rep["obligations"])
+            # Safety property: every unmet obligation is covered by remediation.
+            addressed = {k for item in rep["remediation"] for k in item["addresses"]}
+            assert ob_ids <= addressed
+            assert "Remediation roadmap" in report.markdown
+            assert "## Applicable obligations" in report.markdown
+
+            await session.delete(tenant)
+            await session.commit()
+
+
+class TestAssessmentApiA2:
+    async def test_report_endpoints_and_delete(
+        self, client, db_available, redis_available, monkeypatch
+    ):
+        from app.assessments.engine import AssessmentEvent
+        from app.db.models import AssessmentReport
+        from tests.conftest import mint_token
+
+        async def fake_run(session, assessment, **kwargs):
+            session.add(
+                AssessmentReport(
+                    assessment_id=assessment.id,
+                    version=1,
+                    report={"title": assessment.title, "executive_summary": "ok"},
+                    markdown=f"# Compliance Readiness Assessment — {assessment.title}\n\nbody",
+                )
+            )
+            assessment.status = "complete"
+            await session.commit()
+            yield AssessmentEvent("assessment_completed", {"status": "complete"})
+
+        monkeypatch.setattr("app.api.routes.assessments.run_assessment", fake_run)
+        token = mint_token(email=_unique_email("report-owner"))
+        h = {"Authorization": f"Bearer {token}"}
+
+        resp = await client.post(
+            "/api/v1/assessments", json={"title": "RP", "description": "x " * 60}, headers=h
+        )
+        aid = json.loads(resp.text.split("event: assessment_created\ndata: ")[1].split("\n")[0])[
+            "assessment_id"
+        ]
+
+        rj = await client.get(f"/api/v1/assessments/{aid}/report", headers=h)
+        assert rj.status_code == 200 and rj.json()["version"] == 1
+
+        rmd = await client.get(f"/api/v1/assessments/{aid}/report.md", headers=h)
+        assert rmd.status_code == 200
+        assert rmd.headers["content-type"].startswith("text/markdown")
+        assert "Compliance Readiness Assessment" in rmd.text
+
+        deleted = await client.delete(f"/api/v1/assessments/{aid}", headers=h)
+        assert deleted.status_code == 204
+        gone = await client.get(f"/api/v1/assessments/{aid}/report", headers=h)
+        assert gone.status_code == 404
+
+    async def test_clarification_answers_flow(
+        self, client, db_available, redis_available, monkeypatch
+    ):
+        from app.assessments.engine import AssessmentEvent
+        from tests.conftest import mint_token
+
+        async def fake_run(session, assessment, *, allow_clarification=False, **kwargs):
+            answered = bool((assessment.clarification or {}).get("answers"))
+            if allow_clarification and not answered:
+                assessment.clarification = {
+                    "questions": ["Does it run in a workplace?"],
+                    "answers": None,
+                }
+                assessment.status = "clarifying"
+                await session.commit()
+                yield AssessmentEvent(
+                    "clarification_needed", {"questions": ["Does it run in a workplace?"]}
+                )
+                return
+            assessment.status = "complete"
+            await session.commit()
+            yield AssessmentEvent("assessment_completed", {"status": "complete"})
+
+        monkeypatch.setattr("app.api.routes.assessments.run_assessment", fake_run)
+        token = mint_token(email=_unique_email("clarify-owner"))
+        h = {"Authorization": f"Bearer {token}"}
+
+        created = await client.post(
+            "/api/v1/assessments", json={"description": "x " * 60}, headers=h
+        )
+        assert "event: clarification_needed" in created.text
+        aid = json.loads(created.text.split("event: assessment_created\ndata: ")[1].split("\n")[0])[
+            "assessment_id"
+        ]
+
+        # Answering when not yet clarifying would 409; here it is clarifying.
+        answered = await client.post(
+            f"/api/v1/assessments/{aid}/answers",
+            json={"answers": ["Yes, in a workplace."]},
+            headers=h,
+        )
+        assert answered.status_code == 200
+        assert "event: assessment_completed" in answered.text
+
+        detail = await client.get(f"/api/v1/assessments/{aid}", headers=h)
+        assert detail.json()["status"] == "complete"
+
+        # A second answer round is rejected (no longer clarifying).
+        again = await client.post(
+            f"/api/v1/assessments/{aid}/answers", json={"answers": ["x"]}, headers=h
+        )
+        assert again.status_code == 409
+
+    async def test_daily_assessment_limit(self, client, db_available, redis_available, monkeypatch):
+        from app.assessments.engine import AssessmentEvent
+        from app.services.rate_limit import SlidingWindowLimiter
+        from tests.conftest import mint_token
+
+        async def fake_run(session, assessment, **kwargs):
+            assessment.status = "complete"
+            await session.commit()
+            yield AssessmentEvent("assessment_completed", {"status": "complete"})
+
+        monkeypatch.setattr("app.api.routes.assessments.run_assessment", fake_run)
+        monkeypatch.setattr(
+            "app.services.rate_limit._assessment_limiter",
+            SlidingWindowLimiter(limit=1, window_ms=86_400_000),
+        )
+        token = mint_token(email=_unique_email("ratelimit-owner"))
+        h = {"Authorization": f"Bearer {token}"}
+        body = {"description": "x " * 60}
+
+        first = await client.post("/api/v1/assessments", json=body, headers=h)
+        assert first.status_code == 200
+        second = await client.post("/api/v1/assessments", json=body, headers=h)
+        assert second.status_code == 429
+        assert "Retry-After" in second.headers

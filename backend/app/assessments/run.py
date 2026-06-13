@@ -52,15 +52,25 @@ def _print_event(event: str, data: dict[str, Any]) -> None:
         print(f"profile: {data['profile']['summary']}")
         for unknown in data["unknowns"]:
             print(f"  ? {unknown}")
+    elif event == "clarification_needed":
+        print("clarification needed — re-run with answers via the API:")
+        for q in data["questions"]:
+            print(f"  ? {q}")
     elif event == "finding":
         confidence = f"{data['confidence']:.2f}" if data["confidence"] is not None else "  — "
         severity = f"  [{data['severity']}]" if data.get("severity") else ""
         print(f"{data['verdict']:>15}  {confidence}  {data['rule_id']}{severity}")
+    elif event == "obligations":
+        print(f"obligations mapped: {len(data['obligations'])}")
+    elif event == "gap":
+        print(f"{data['status']:>15}  {data['obligation_id']}")
+    elif event == "report_ready":
+        print(f"report v{data['version']} assembled")
     elif event == "assessment_completed":
         usage = data.get("usage", {})
         print(
-            f"\ncomplete: {data['verdict_counts']}  blockers={data['blockers']}"
-            f"  tokens={usage.get('total_tokens', 0)}"
+            f"\ncomplete: {data['verdict_counts']}  gaps={data.get('gap_counts', {})}"
+            f"  blockers={data['blockers']}  tokens={usage.get('total_tokens', 0)}"
         )
     elif event == "error":
         print(f"\nERROR: {data['message']}", file=sys.stderr)
@@ -94,6 +104,7 @@ async def _run(args: argparse.Namespace) -> int:
     client = ChatClient(model=args.generation_model)
     failed = False
     actual: dict[str, str] = {}
+    report_dict: dict[str, Any] | None = None
     try:
         async for session in get_session():
             tenant_id, user_id = await _cli_identity(session)
@@ -104,13 +115,26 @@ async def _run(args: argparse.Namespace) -> int:
             await session.commit()
             print(f"assessment {assessment.id}: {title}")
 
-            async for event in run_assessment(session, assessment, llm_complete=client.complete):
+            async for event in run_assessment(
+                session,
+                assessment,
+                llm_complete=client.complete,
+                allow_clarification=args.clarify,
+            ):
                 _print_event(event.event, event.data)
                 if event.event == "finding":
                     actual[str(event.data["rule_id"])] = str(event.data["verdict"])
+                elif event.event == "report_ready":
+                    report_dict = event.data["report"]  # type: ignore[assignment]
                 failed = failed or event.event == "error"
     finally:
         await client.aclose()
+
+    if args.markdown and report_dict is not None:
+        from app.assessments.report import AssessmentReport, render_markdown
+
+        print("\n" + "=" * 70 + "\n")
+        print(render_markdown(AssessmentReport.model_validate(report_dict)))
 
     if failed:
         return 1
@@ -127,6 +151,14 @@ def main() -> None:
     source.add_argument("--list-scenarios", action="store_true")
     parser.add_argument("--title", default="", help="assessment title (with --file)")
     parser.add_argument("--generation-model", default=None, help="override the stage model")
+    parser.add_argument(
+        "--clarify",
+        action="store_true",
+        help="pause for clarifying questions if the profile is thin",
+    )
+    parser.add_argument(
+        "--markdown", action="store_true", help="print the rendered markdown report at the end"
+    )
     args = parser.parse_args()
 
     if args.list_scenarios:

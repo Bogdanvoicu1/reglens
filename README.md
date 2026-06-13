@@ -174,4 +174,4 @@ uv run mypy app        # types
 - [x] M6 — RAG metrics + provisioned Grafana dashboards, optional Langfuse tracing, problem+json errors, security headers, body limits
 - [x] Security & cost hardening — see SECURITY.md and Cost engineering
 - [ ] M7 — Docs & demo
-- [ ] v2 — Compliance Assessment Agent: system description → grounded readiness report ([design](docs/ASSESSMENT_AGENT.md)) — A0 foundations landed: annex ingestion, rulebook v1 (31 rules), scenario suite, assessment tables
+- [ ] v2 — Compliance Assessment Agent: system description → grounded readiness report ([design](docs/ASSESSMENT_AGENT.md)) — A0–A2 landed: annex ingestion, rulebook v1 (31 rules), staged engine (profile → classification → obligation mapping → gaps → remediation → report) with markdown export, clarification round, and a daily rate limit; A3 frontend next

@@ -4,18 +4,18 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import StreamingResponse
+from starlette.responses import PlainTextResponse, StreamingResponse
 
 from app.assessments.engine import run_assessment
 from app.assessments.rulebook import load_rulebook
 from app.core.security import AuthContext, get_current_user
-from app.db.models import Assessment, AssessmentFinding
+from app.db.models import Assessment, AssessmentFinding, AssessmentReport
 from app.db.session import get_session
-from app.services.rate_limit import rate_limited_user
+from app.services.rate_limit import assessment_rate_limited_user
 
 router = APIRouter(prefix="/api/v1", tags=["assessments"])
 
@@ -23,6 +23,11 @@ router = APIRouter(prefix="/api/v1", tags=["assessments"])
 class AssessmentCreate(BaseModel):
     title: str = Field(default="", max_length=300)
     description: str = Field(min_length=80, max_length=8000)
+    clarify: bool = True  # pause for clarifying questions when the profile is thin
+
+
+class ClarificationAnswers(BaseModel):
+    answers: list[str] = Field(min_length=1, max_length=3)
 
 
 class AssessmentSummary(BaseModel):
@@ -57,10 +62,32 @@ def _sse(event: str, data: dict[str, object]) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
+def _event_stream(
+    session: AsyncSession, assessment: Assessment, *, allow_clarification: bool, created: bool
+) -> AsyncIterator[str]:
+    async def stream() -> AsyncIterator[str]:
+        if created:
+            yield _sse("assessment_created", {"assessment_id": str(assessment.id)})
+        async for event in run_assessment(
+            session, assessment, allow_clarification=allow_clarification
+        ):
+            yield _sse(event.event, event.data)
+
+    return stream()
+
+
+def _sse_response(stream: AsyncIterator[str]) -> StreamingResponse:
+    return StreamingResponse(
+        stream,
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @router.post("/assessments")
 async def create_assessment(
     req: AssessmentCreate,
-    auth: Annotated[AuthContext, Depends(rate_limited_user)],
+    auth: Annotated[AuthContext, Depends(assessment_rate_limited_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> StreamingResponse:
     assessment = Assessment(
@@ -71,16 +98,30 @@ async def create_assessment(
     )
     session.add(assessment)
     await session.commit()
+    return _sse_response(
+        _event_stream(session, assessment, allow_clarification=req.clarify, created=True)
+    )
 
-    async def stream() -> AsyncIterator[str]:
-        yield _sse("assessment_created", {"assessment_id": str(assessment.id)})
-        async for event in run_assessment(session, assessment):
-            yield _sse(event.event, event.data)
 
-    return StreamingResponse(
-        stream(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+@router.post("/assessments/{assessment_id}/answers")
+async def answer_clarification(
+    assessment_id: uuid.UUID,
+    req: ClarificationAnswers,
+    auth: Annotated[AuthContext, Depends(assessment_rate_limited_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> StreamingResponse:
+    assessment = await session.get(Assessment, assessment_id)
+    if assessment is None or assessment.tenant_id != auth.tenant_id:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    if assessment.status != "clarifying":
+        raise HTTPException(status_code=409, detail="Assessment is not awaiting clarification")
+    questions = (assessment.clarification or {}).get("questions", [])
+    assessment.clarification = {"questions": questions, "answers": req.answers}
+    await session.commit()
+    # Re-run the full pipeline with answers folded into the profile; no second
+    # clarification round in v1.
+    return _sse_response(
+        _event_stream(session, assessment, allow_clarification=False, created=False)
     )
 
 
@@ -142,3 +183,54 @@ async def get_assessment(
         system_profile=assessment.system_profile,
         findings=[out(f) for f in findings],
     )
+
+
+async def _latest_report(
+    session: AsyncSession, assessment_id: uuid.UUID, auth: AuthContext
+) -> AssessmentReport:
+    assessment = await session.get(Assessment, assessment_id)
+    if assessment is None or assessment.tenant_id != auth.tenant_id:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    report = await session.scalar(
+        select(AssessmentReport)
+        .where(AssessmentReport.assessment_id == assessment_id)
+        .order_by(AssessmentReport.version.desc())
+        .limit(1)
+    )
+    if report is None:
+        raise HTTPException(status_code=404, detail="No report yet for this assessment")
+    return report
+
+
+@router.get("/assessments/{assessment_id}/report")
+async def get_report(
+    assessment_id: uuid.UUID,
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, object]:
+    report = await _latest_report(session, assessment_id, auth)
+    return {"version": report.version, "report": report.report}
+
+
+@router.get("/assessments/{assessment_id}/report.md", response_class=PlainTextResponse)
+async def get_report_markdown(
+    assessment_id: uuid.UUID,
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> PlainTextResponse:
+    report = await _latest_report(session, assessment_id, auth)
+    return PlainTextResponse(report.markdown, media_type="text/markdown; charset=utf-8")
+
+
+@router.delete("/assessments/{assessment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_assessment(
+    assessment_id: uuid.UUID,
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    assessment = await session.get(Assessment, assessment_id)
+    if assessment is None or assessment.tenant_id != auth.tenant_id:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    await session.delete(assessment)  # findings + reports cascade
+    await session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

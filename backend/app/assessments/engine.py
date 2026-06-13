@@ -1,17 +1,21 @@
 """Assessment engine: runs the staged pipeline for one assessment.
 
-Persistence-first: every stage output is committed before the corresponding
-event is yielded, so a dropped SSE connection loses nothing — the findings
-are readable via GET. LLM access is a plain injected callable, which keeps
-the engine deterministic under test and provider-agnostic.
+Stages: profile extraction → (optional clarification round) → rulebook
+classification → deterministic obligation mapping → gap analysis →
+remediation → report assembly. Persistence-first: each stage commits before
+its event is yielded, so a dropped SSE connection loses nothing. LLM access
+is an injected callable, keeping the engine deterministic under test and
+provider-agnostic.
 """
 
+import re
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import structlog
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.assessments.classify import (
@@ -21,26 +25,49 @@ from app.assessments.classify import (
     plan_waves,
     split_runnable,
 )
+from app.assessments.gaps import analyse_gaps
 from app.assessments.llm_json import LLMComplete
+from app.assessments.mapping import map_obligations
 from app.assessments.profile import extract_profile
+from app.assessments.remediation import collect_needs, plan_remediation
+from app.assessments.report import (
+    ReportBlocker,
+    build_report,
+    generate_executive_summary,
+    render_markdown,
+)
 from app.assessments.rulebook import load_rulebook
 from app.assessments.schema import Rulebook
-from app.db.models import Assessment, AssessmentFinding
+from app.core.config import get_settings
+from app.db.models import Assessment, AssessmentFinding, AssessmentReport
 from app.services.answer_cache import corpus_fingerprint
 from app.services.llm import ChatClient
 
 log = structlog.get_logger()
 
+_QUESTION_PREFIX = re.compile(
+    r"^(does|is|are|do|has|have|will|can)\b\s+(the\s+)?"
+    r"(system|organisation|organization|service|model|product|company)?\s*",
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class AssessmentEvent:
-    event: str  # stage_started | profile | finding | assessment_completed | error
+    event: str
     data: dict[str, object]
 
 
 def _add_usage(total: dict[str, int], usage: dict[str, int]) -> None:
     for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
         total[key] = total.get(key, 0) + (usage.get(key) or 0)
+
+
+def _humanize_question(question: str) -> str:
+    """Turn a rule's yes/no question into a short noun phrase for a heading."""
+    text = _QUESTION_PREFIX.sub("", question.strip()).split("?")[0].split(",")[0].split(";")[0]
+    text = text.strip().rstrip(".")
+    return (text[:1].upper() + text[1:])[:120] if text else question[:120]
 
 
 def _finding_event(finding: RuleFinding) -> AssessmentEvent:
@@ -59,7 +86,9 @@ def _finding_event(finding: RuleFinding) -> AssessmentEvent:
     )
 
 
-def _finding_row(assessment_id: uuid.UUID, finding: RuleFinding, ord_: int) -> AssessmentFinding:
+def _classification_row(
+    assessment_id: uuid.UUID, finding: RuleFinding, ord_: int
+) -> AssessmentFinding:
     return AssessmentFinding(
         assessment_id=assessment_id,
         stage="classification",
@@ -72,18 +101,46 @@ def _finding_row(assessment_id: uuid.UUID, finding: RuleFinding, ord_: int) -> A
     )
 
 
+def _effective_description(assessment: Assessment) -> str:
+    """Original description plus any answered clarification Q&A."""
+    clar = assessment.clarification or {}
+    answers = clar.get("answers")
+    if not answers:
+        return assessment.description
+    qa = "\n".join(
+        f"Q: {q}\nA: {a}" for q, a in zip(clar.get("questions", []), answers, strict=False)
+    )
+    return f"{assessment.description}\n\nClarifications:\n{qa}"
+
+
+async def _next_report_version(session: AsyncSession, assessment_id: uuid.UUID) -> int:
+    current = await session.scalar(
+        select(func.max(AssessmentReport.version)).where(
+            AssessmentReport.assessment_id == assessment_id
+        )
+    )
+    return (current or 0) + 1
+
+
 async def run_assessment(
     session: AsyncSession,
     assessment: Assessment,
     *,
     llm_complete: LLMComplete | None = None,
     rulebook: Rulebook | None = None,
+    allow_clarification: bool = False,
 ) -> AsyncIterator[AssessmentEvent]:
     rulebook = rulebook or load_rulebook()
+    settings = get_settings()
     own_client: ChatClient | None = None
+    own_summary_client: ChatClient | None = None
     if llm_complete is None:
         own_client = ChatClient()
         llm_complete = own_client.complete
+    summary_complete = llm_complete
+    if own_client is not None and settings.assessment_summary_model:
+        own_summary_client = ChatClient(model=settings.assessment_summary_model)
+        summary_complete = own_summary_client.complete
 
     total_usage: dict[str, int] = {}
     try:
@@ -92,11 +149,13 @@ async def run_assessment(
         assessment.rulebook_version = rulebook.version
         await session.commit()
 
-        # Stage 1 — profile extraction
+        # Stage 1 — profile extraction (from the description + any clarifications)
         yield AssessmentEvent("stage_started", {"stage": "profile_extraction"})
-        profile, usage = await extract_profile(llm_complete, assessment.description)
+        already_answered = bool((assessment.clarification or {}).get("answers"))
+        profile, usage = await extract_profile(llm_complete, _effective_description(assessment))
         _add_usage(total_usage, usage)
         assessment.system_profile = profile.model_dump()
+        await _reset_findings(session, assessment.id)
         session.add(
             AssessmentFinding(
                 assessment_id=assessment.id,
@@ -110,9 +169,23 @@ async def run_assessment(
             "profile", {"profile": profile.model_dump(), "unknowns": profile.unknowns}
         )
 
+        # Clarification gate — only on the first pass, only if questions exist.
+        if allow_clarification and not already_answered and profile.clarifying_questions:
+            assessment.clarification = {
+                "questions": profile.clarifying_questions,
+                "answers": None,
+            }
+            assessment.status = "clarifying"
+            await session.commit()
+            yield AssessmentEvent(
+                "clarification_needed", {"questions": profile.clarifying_questions}
+            )
+            return
+
         # Stage 2 — classification in topological waves, batched per group
         yield AssessmentEvent("stage_started", {"stage": "classification"})
         verdict_map: dict[str, str] = {}
+        findings_by_rule: dict[str, RuleFinding] = {}
         ord_ = 1
         for wave in plan_waves(rulebook):
             for batch_rules in group_batches(wave):
@@ -125,43 +198,139 @@ async def run_assessment(
                     _add_usage(total_usage, usage)
                     batch_findings.extend(classified)
                 for finding in batch_findings:
-                    session.add(_finding_row(assessment.id, finding, ord_))
+                    session.add(_classification_row(assessment.id, finding, ord_))
                     verdict_map[finding.rule.id] = finding.verdict
+                    findings_by_rule[finding.rule.id] = finding
                     ord_ += 1
                 await session.commit()
                 for finding in batch_findings:
                     yield _finding_event(finding)
 
-        blockers = sorted(
-            rule_id
-            for rule_id, verdict in verdict_map.items()
-            if verdict == "applies" and rulebook.rule(rule_id).on_applies.severity == "blocker"
-        )
-        counts = {
+        verdict_counts = {
             v: sum(1 for x in verdict_map.values() if x == v)
             for v in ("applies", "does_not_apply", "needs_info", "skipped")
         }
+        blocker_findings = [
+            findings_by_rule[rid]
+            for rid, v in verdict_map.items()
+            if v == "applies" and rulebook.rule(rid).on_applies.severity == "blocker"
+        ]
+        blockers = [
+            ReportBlocker(
+                rule_id=f.rule.id,
+                title=_humanize_question(f.rule.question),
+                reasoning=f.reasoning,
+                citations=[f"{c.corpus}:{c.ref}" for c in f.citations],
+            )
+            for f in sorted(blocker_findings, key=lambda f: f.rule.id)
+        ]
+
+        # Stage 3 — obligation mapping (deterministic)
+        yield AssessmentEvent("stage_started", {"stage": "obligation_mapping"})
+        mapped = map_obligations(rulebook, verdict_map)
+        yield AssessmentEvent(
+            "obligations",
+            {
+                "obligations": [
+                    {
+                        "id": m.obligation.id,
+                        "title": m.obligation.title,
+                        "severity": m.severity,
+                        "audience": m.obligation.audience,
+                        "audience_established": m.audience_established,
+                    }
+                    for m in mapped
+                ]
+            },
+        )
+
+        # Stage 4 — gap analysis
+        yield AssessmentEvent("stage_started", {"stage": "gap_analysis"})
+        gaps, usage = await analyse_gaps(llm_complete, mapped, profile)
+        _add_usage(total_usage, usage)
+        gap_by_id = {g.obligation_id: g for g in gaps}
+        for m in mapped:
+            gap = gap_by_id[m.obligation.id]
+            session.add(
+                AssessmentFinding(
+                    assessment_id=assessment.id,
+                    stage="gap_analysis",
+                    rule_id=m.obligation.id,
+                    verdict=gap.status,
+                    reasoning=gap.reasoning,
+                    citations={
+                        "sources": [
+                            {"corpus": c.corpus, "ref": c.ref} for c in m.obligation.citations
+                        ]
+                    },
+                    ord=ord_,
+                )
+            )
+            ord_ += 1
+        await session.commit()
+        for g in gaps:
+            yield AssessmentEvent("gap", {"obligation_id": g.obligation_id, "status": g.status})
+
+        # Stage 5 — remediation & tradeoffs
+        yield AssessmentEvent("stage_started", {"stage": "remediation"})
+        needs = collect_needs([(b.rule_id, b.title) for b in blockers], mapped, gaps)
+        remediation, usage = await plan_remediation(llm_complete, needs)
+        _add_usage(total_usage, usage)
+
+        # Stage 6 — report assembly + executive summary + markdown
+        yield AssessmentEvent("stage_started", {"stage": "report"})
+        report = build_report(
+            assessment_id=str(assessment.id),
+            title=assessment.title,
+            rulebook_version=assessment.rulebook_version,
+            corpus_fingerprint=assessment.corpus_fingerprint,
+            profile=profile.model_dump(),
+            verdict_counts=verdict_counts,
+            blockers=blockers,
+            obligations=mapped,
+            gaps=gaps,
+            remediation=remediation,
+            executive_summary="",
+        )
+        report.executive_summary, usage = await generate_executive_summary(summary_complete, report)
+        _add_usage(total_usage, usage)
+        markdown = render_markdown(report)
+        version = await _next_report_version(session, assessment.id)
+        session.add(
+            AssessmentReport(
+                assessment_id=assessment.id,
+                version=version,
+                report=report.model_dump(),
+                markdown=markdown,
+            )
+        )
         assessment.status = "complete"
         assessment.completed_at = datetime.now(UTC)
         await session.commit()
+
         log.info(
             "assessment_completed",
             assessment_id=str(assessment.id),
-            counts=counts,
-            blockers=blockers,
+            verdict_counts=verdict_counts,
+            gap_counts=report.gap_counts,
+            blockers=[b.rule_id for b in blockers],
+            report_version=version,
             usage=total_usage,
         )
+        yield AssessmentEvent("report_ready", {"version": version, "report": report.model_dump()})
         yield AssessmentEvent(
             "assessment_completed",
             {
                 "assessment_id": str(assessment.id),
                 "status": "complete",
-                "verdict_counts": counts,
-                "blockers": blockers,
+                "verdict_counts": verdict_counts,
+                "gap_counts": report.gap_counts,
+                "blockers": [b.rule_id for b in blockers],
+                "report_version": version,
                 "usage": total_usage,
             },
         )
-    except Exception:  # incl. StageOutputError from profile extraction
+    except Exception:
         log.exception("assessment_failed", assessment_id=str(assessment.id))
         await session.rollback()
         assessment.status = "failed"
@@ -172,3 +341,12 @@ async def run_assessment(
     finally:
         if own_client is not None:
             await own_client.aclose()
+        if own_summary_client is not None:
+            await own_summary_client.aclose()
+
+
+async def _reset_findings(session: AsyncSession, assessment_id: uuid.UUID) -> None:
+    """Clear prior findings so a clarification re-run does not duplicate them."""
+    await session.execute(
+        delete(AssessmentFinding).where(AssessmentFinding.assessment_id == assessment_id)
+    )

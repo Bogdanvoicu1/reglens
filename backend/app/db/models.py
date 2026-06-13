@@ -136,6 +136,8 @@ class Assessment(Base):
     # draft | clarifying | running | complete | failed
     description: Mapped[str] = mapped_column(Text, default="")
     system_profile: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # {"questions": [...], "answers": [...]} — set when a clarification round runs.
+    clarification: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     corpus_fingerprint: Mapped[str | None] = mapped_column(String(200), nullable=True)
     rulebook_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = created_at_col()

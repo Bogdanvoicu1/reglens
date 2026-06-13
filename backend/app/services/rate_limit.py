@@ -57,6 +57,9 @@ class SlidingWindowLimiter:
 
 
 _limiter: SlidingWindowLimiter | None = None
+_assessment_limiter: SlidingWindowLimiter | None = None
+
+_DAY_MS = 86_400_000
 
 
 def _get_limiter() -> SlidingWindowLimiter:
@@ -66,21 +69,48 @@ def _get_limiter() -> SlidingWindowLimiter:
     return _limiter
 
 
-async def rate_limited_user(
-    auth: Annotated[AuthContext, Depends(get_current_user)],
-) -> AuthContext:
-    """Auth + rate limit in one dependency; returns the auth context when admitted."""
-    limiter = _get_limiter()
-    decision = await limiter.check(str(auth.tenant_id))
+def _get_assessment_limiter() -> SlidingWindowLimiter:
+    global _assessment_limiter
+    if _assessment_limiter is None:
+        _assessment_limiter = SlidingWindowLimiter(
+            limit=get_settings().assessment_limit_per_day, window_ms=_DAY_MS
+        )
+    return _assessment_limiter
+
+
+async def _check_or_429(limiter: SlidingWindowLimiter, key: str, detail: str) -> None:
+    decision = await limiter.check(key)
     if not decision.allowed:
         retry_s = max(1, decision.retry_after_ms // 1000)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limit exceeded for this workspace",
+            detail=detail,
             headers={
                 "Retry-After": str(retry_s),
                 "X-RateLimit-Limit": str(limiter.limit),
                 "X-RateLimit-Remaining": "0",
             },
         )
+
+
+async def rate_limited_user(
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+) -> AuthContext:
+    """Auth + rate limit in one dependency; returns the auth context when admitted."""
+    await _check_or_429(
+        _get_limiter(), str(auth.tenant_id), "Rate limit exceeded for this workspace"
+    )
+    return auth
+
+
+async def assessment_rate_limited_user(
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+) -> AuthContext:
+    """Stricter per-tenant daily cap for expensive assessment runs. Uses a
+    distinct key namespace so it never shares a window with chat limiting."""
+    await _check_or_429(
+        _get_assessment_limiter(),
+        f"assess:{auth.tenant_id}",
+        "Daily assessment limit reached for this workspace",
+    )
     return auth

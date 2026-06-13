@@ -105,5 +105,8 @@ assessment dataset with full per-rule coverage, assessment tables migration).
 classification, persistence-first SSE API, CLI runner with scenario diff;
 live-verified 57/57 expected verdicts across 4 scenarios incl. blocker
 detection, ≈$0.01 per assessment).
-Next: A2 — full pipeline (obligation mapping, gap analysis, remediation,
-report assembly, clarification round).
+**A2 — Full pipeline done** (deterministic obligation mapping, gap analysis,
+remediation roadmap with guaranteed blocker coverage, typed report +
+markdown export, one-round clarification, deletion, daily assessment rate
+limit; report renders end-to-end with a correct priority taxonomy).
+Next: A3 — frontend (intake wizard, live stage timeline, report view).

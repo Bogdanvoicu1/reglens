@@ -30,7 +30,12 @@ short note to "unknowns".
 third-party components (e.g. an LLM API) is NOT the same as using another \
 organisation's system. Whether the system makes decisions about people is \
 a different fact from whether the software runs automatically.
-5. Reply with ONLY a JSON object matching the schema — no prose, no code \
+5. In "clarifying_questions", list AT MOST 3 questions — and only for facts \
+that are entirely absent AND would change a high-risk or prohibited-practice \
+classification (e.g. does it run in a workplace, does it make decisions with \
+legal effect). If the description already covers the decisive facts, return \
+an empty list. Do not ask about minor details.
+6. Reply with ONLY a JSON object matching the schema — no prose, no code \
 fences.
 
 JSON schema (all fields required):
@@ -57,7 +62,8 @@ education, law enforcement, consumer, industrial, etc.",
   "transfers_and_hosting": "hosting locations, cloud providers, \
 subprocessors, data transfers outside the EU/EEA",
   "scale": "scale of use: number of users/data subjects, volume, geographic spread",
-  "unknowns": ["facts that matter for the assessment but are not stated"]
+  "unknowns": ["facts that matter for the assessment but are not stated"],
+  "clarifying_questions": ["at most 3 critical questions; empty if none needed"]
 }"""
 
 
@@ -73,9 +79,12 @@ class SystemProfile(BaseModel):
     transfers_and_hosting: str = Field(min_length=1)
     scale: str = Field(min_length=1)
     unknowns: list[str] = Field(default_factory=list)
+    clarifying_questions: list[str] = Field(default_factory=list, max_length=3)
 
     def as_prompt_block(self) -> str:
-        return json.dumps(self.model_dump(), indent=2)
+        # The clarification fields are workflow metadata, not part of the
+        # system's compliance profile, so they stay out of the classifier prompt.
+        return json.dumps(self.model_dump(exclude={"unknowns", "clarifying_questions"}), indent=2)
 
 
 async def extract_profile(

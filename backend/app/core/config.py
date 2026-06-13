@@ -43,6 +43,11 @@ class Settings(BaseSettings):
 
     # Rate limiting defaults (requests per minute per tenant)
     rate_limit_rpm: int = 30
+    # Assessment runs are expensive (15-20 LLM calls); cap per tenant per day.
+    assessment_limit_per_day: int = 5
+    # Optional stronger model for the report's executive summary; "" reuses
+    # the generation model.
+    assessment_summary_model: str = ""
 
 
 @lru_cache
