@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+# Config comes from build args, not a baked-in file.
+.env
+.env.*
+!.env.example
+*.local
+npm-debug.log*
+.DS_Store

@@ -42,8 +42,12 @@ cp .env.example .env            # add your Supabase URL + anon key
 npm install && npm run dev      # SPA on http://localhost:5173
 ```
 
-Or run the whole stack containerized: `docker compose up -d --build` serves
-the SPA at http://localhost:3000 through nginx (SSE-safe proxy to the API).
+Or run the whole stack containerized. The SPA's Supabase config is inlined at
+build time, so point compose at `frontend/.env` for the build:
+
+```bash
+docker compose --env-file frontend/.env up -d --build   # SPA at http://localhost:3000 (nginx, SSE-safe proxy)
+```
 
 The ingestion CLI downloads the official EUR-Lex HTML (cached under
 `backend/data/raw/`), parses it into articles, recitals and annexes, produces

@@ -3,6 +3,16 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# Vite inlines the Supabase config into the bundle at build time. Passed as build
+# args (not a baked-in .env) so the image stays config-free; compose supplies
+# them from frontend/.env — see docker-compose.yml and the README.
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+RUN test -n "$VITE_SUPABASE_URL" && test -n "$VITE_SUPABASE_ANON_KEY" || \
+    (echo "ERROR: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY build args are required." \
+          "Run: docker compose --env-file frontend/.env up -d --build" && false)
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 RUN npm run build
 
 FROM nginx:1.27-alpine

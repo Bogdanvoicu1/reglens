@@ -39,7 +39,13 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # Supabase config is inlined at build time. Pass with:
+      #   docker compose --env-file frontend/.env up -d --build
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
     ports:
       - "3000:80"
     depends_on:
