@@ -1,5 +1,11 @@
 import { clearToken, getToken } from "./auth";
-import type { ConversationDetail, ConversationSummary, CorpusOut } from "../types";
+import type {
+  AssessmentReport,
+  AssessmentSummary,
+  ConversationDetail,
+  ConversationSummary,
+  CorpusOut,
+} from "../types";
 
 export class ApiError extends Error {
   status: number;
@@ -46,4 +52,26 @@ export const api = {
     (await request(`/api/v1/conversations/${id}`)).json(),
 
   listCorpora: async (): Promise<CorpusOut[]> => (await request("/api/v1/corpora")).json(),
+
+  createAssessment: (body: { title?: string; description: string; clarify: boolean }) =>
+    request("/api/v1/assessments", { method: "POST", body: JSON.stringify(body) }),
+
+  answerClarification: (id: string, answers: string[]) =>
+    request(`/api/v1/assessments/${id}/answers`, {
+      method: "POST",
+      body: JSON.stringify({ answers }),
+    }),
+
+  listAssessments: async (): Promise<AssessmentSummary[]> =>
+    (await request("/api/v1/assessments")).json(),
+
+  getReport: async (id: string): Promise<{ version: number; report: AssessmentReport }> =>
+    (await request(`/api/v1/assessments/${id}/report`)).json(),
+
+  reportMarkdown: async (id: string): Promise<string> =>
+    (await request(`/api/v1/assessments/${id}/report.md`)).text(),
+
+  deleteAssessment: async (id: string): Promise<void> => {
+    await request(`/api/v1/assessments/${id}`, { method: "DELETE" });
+  },
 };

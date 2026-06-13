@@ -2,8 +2,10 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getToken } from "./lib/auth";
 import { TokenGate } from "./components/TokenGate";
+import { NavRail, type View } from "./components/NavRail";
 import { HistorySidebar } from "./components/HistorySidebar";
 import { ChatPanel } from "./components/ChatPanel";
+import { AssessmentsView } from "./components/AssessmentsView";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -11,6 +13,7 @@ const queryClient = new QueryClient({
 
 export default function App() {
   const [authed, setAuthed] = useState(() => getToken() !== null);
+  const [view, setView] = useState<View>("chat");
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   if (!authed) return <TokenGate onAuthed={() => setAuthed(true)} />;
@@ -18,15 +21,22 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex h-screen bg-zinc-950">
-        <HistorySidebar
-          activeId={conversationId}
-          onSelect={setConversationId}
-          onNew={() => setConversationId(null)}
-        />
-        <ChatPanel
-          conversationId={conversationId}
-          onConversationCreated={setConversationId}
-        />
+        <NavRail view={view} onView={setView} />
+        {view === "chat" ? (
+          <>
+            <HistorySidebar
+              activeId={conversationId}
+              onSelect={setConversationId}
+              onNew={() => setConversationId(null)}
+            />
+            <ChatPanel
+              conversationId={conversationId}
+              onConversationCreated={setConversationId}
+            />
+          </>
+        ) : (
+          <AssessmentsView />
+        )}
       </div>
     </QueryClientProvider>
   );

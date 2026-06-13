@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { clearToken } from "../lib/auth";
 
 export function HistorySidebar({
   activeId,
@@ -19,22 +18,8 @@ export function HistorySidebar({
   return (
     <nav className="flex h-full w-66 flex-col border-r border-white/5 bg-zinc-925 bg-zinc-900/40">
       <div className="p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-bold text-white">
-              R
-            </div>
-            <span className="font-semibold tracking-tight text-white">RegLens</span>
-          </div>
-          <button
-            onClick={() => {
-              clearToken();
-              window.location.reload();
-            }}
-            className="rounded-md px-2 py-1 text-[11px] text-zinc-500 transition hover:bg-white/5 hover:text-zinc-300"
-          >
-            Sign out
-          </button>
+        <div className="mb-3 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+          Ask
         </div>
         <button
           onClick={onNew}

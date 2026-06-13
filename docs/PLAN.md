@@ -109,4 +109,9 @@ detection, ≈$0.01 per assessment).
 remediation roadmap with guaranteed blocker coverage, typed report +
 markdown export, one-round clarification, deletion, daily assessment rate
 limit; report renders end-to-end with a correct priority taxonomy).
-Next: A3 — frontend (intake wizard, live stage timeline, report view).
+**A3 — Frontend done** (Ask/Assess nav, intake form, live SSE stage
+timeline, clarification panel, full report view with gap badges + citations
++ remediation roadmap + authenticated markdown download; Playwright-verified
+end-to-end).
+Next: A4 — evals & hardening (per-rule gates, blocker-recall hard gate,
+injection red-team scenarios, Grafana panel).
