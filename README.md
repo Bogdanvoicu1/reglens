@@ -228,3 +228,20 @@ uv run mypy app        # types
 - [x] v2 — Compliance Assessment Agent: system description → grounded readiness report ([design](docs/ASSESSMENT_AGENT.md)). A0–A4 complete: annex ingestion, rulebook v1 (31 rules), staged engine (profile → classification → obligation mapping → gaps → remediation → report) with markdown export and clarification round, the React UI (intake, live stage timeline, report view), and the eval/hardening layer — a 28-scenario real-engine suite with a two-tier safety gate (blocker recall 1.0, zero false-clears, injection resistance 0.91), judge-tier prohibited-practice classification, and per-assessment cost/Grafana panels.
 
 ![RegLens assessment report](docs/assessment-report.png)
+
+## Deployment
+
+RegLens deploys as two Railway services (backend API and frontend SPA) backed
+by managed Postgres + Redis and a Supabase project for auth. Step-by-step
+guides:
+
+- [docs/DEPLOY_RAILWAY.md](docs/DEPLOY_RAILWAY.md) — create the project and both
+  services, per-service environment variables, build/start commands, ports,
+  health checks, and how to verify the deploy.
+- [docs/SUPABASE.md](docs/SUPABASE.md) — create the project, anon vs
+  service-role keys, the database schema migrations, and how to point local vs
+  production at the right project.
+
+## License
+
+MIT — see [LICENSE](LICENSE). RegLens provides information, not legal advice.
