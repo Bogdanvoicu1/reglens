@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
-from pgvector.sqlalchemy import Vector
+from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
 from sqlalchemy import Computed, DateTime, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -105,8 +106,8 @@ class Message(Base):
     )
     role: Mapped[str] = mapped_column(String(20))
     content: Mapped[str] = mapped_column(Text)
-    citations: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    usage: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    citations: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     latency_ms: Mapped[int | None]
     created_at: Mapped[datetime] = created_at_col()
 
@@ -117,7 +118,7 @@ class EvalRun(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     git_sha: Mapped[str] = mapped_column(String(40))
     dataset_version: Mapped[str] = mapped_column(String(50))
-    metrics: Mapped[dict] = mapped_column(JSONB)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = created_at_col()
 
 
@@ -135,9 +136,9 @@ class Assessment(Base):
     status: Mapped[str] = mapped_column(String(20), default="draft")
     # draft | clarifying | running | complete | failed
     description: Mapped[str] = mapped_column(Text, default="")
-    system_profile: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    system_profile: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     # {"questions": [...], "answers": [...]} — set when a clarification round runs.
-    clarification: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    clarification: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     corpus_fingerprint: Mapped[str | None] = mapped_column(String(200), nullable=True)
     rulebook_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = created_at_col()
@@ -160,7 +161,7 @@ class AssessmentFinding(Base):
     verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
     confidence: Mapped[float | None]
     reasoning: Mapped[str] = mapped_column(Text, default="")
-    citations: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    citations: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     ord: Mapped[int]
     created_at: Mapped[datetime] = created_at_col()
 
@@ -174,6 +175,6 @@ class AssessmentReport(Base):
         ForeignKey("assessments.id", ondelete="CASCADE")
     )
     version: Mapped[int] = mapped_column(default=1)
-    report: Mapped[dict] = mapped_column(JSONB)
+    report: Mapped[dict[str, Any]] = mapped_column(JSONB)
     markdown: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = created_at_col()

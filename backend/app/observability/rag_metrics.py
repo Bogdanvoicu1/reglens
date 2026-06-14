@@ -1,5 +1,7 @@
 """RAG-specific Prometheus metrics, recorded once per chat request."""
 
+from typing import Any
+
 from prometheus_client import Counter, Histogram
 
 CHAT_REQUESTS = Counter(
@@ -45,7 +47,7 @@ ASSESSMENT_TOKENS = Histogram(
 )
 
 
-def record_chat(outcome: str, latency_s: float, usage: dict | None = None) -> None:
+def record_chat(outcome: str, latency_s: float, usage: dict[str, Any] | None = None) -> None:
     CHAT_REQUESTS.labels(outcome).inc()
     CHAT_LATENCY.observe(latency_s)
     if usage:

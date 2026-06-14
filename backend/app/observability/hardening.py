@@ -1,4 +1,4 @@
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -13,7 +13,7 @@ SECURITY_HEADERS = {
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response = await call_next(request)
         for key, value in SECURITY_HEADERS.items():
             response.headers.setdefault(key, value)
@@ -27,7 +27,7 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
     downstream by Pydantic field length limits.
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         length = request.headers.get("content-length")
         if length and int(length) > get_settings().max_request_bytes:
             return JSONResponse(

@@ -9,6 +9,7 @@ refusals or errors.
 import hashlib
 import json
 import re
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -41,7 +42,7 @@ def cache_key(question: str, fingerprint: str, top_k: int) -> str:
     return "ans:" + hashlib.sha256(raw.encode()).hexdigest()
 
 
-async def get_cached_answer(key: str) -> dict | None:
+async def get_cached_answer(key: str) -> dict[str, Any] | None:
     try:
         payload = await get_redis().get(key)
     except Exception:
@@ -50,7 +51,7 @@ async def get_cached_answer(key: str) -> dict | None:
     return json.loads(payload) if payload else None
 
 
-async def set_cached_answer(key: str, value: dict) -> None:
+async def set_cached_answer(key: str, value: dict[str, Any]) -> None:
     try:
         await get_redis().set(key, json.dumps(value), ex=get_settings().answer_cache_ttl_seconds)
     except Exception:

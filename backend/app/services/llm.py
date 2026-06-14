@@ -3,6 +3,7 @@
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 import httpx
 
@@ -18,7 +19,7 @@ class StreamResult:
     """Filled in as the stream is consumed; complete after iteration ends."""
 
     text: str = ""
-    usage: dict = field(default_factory=dict)
+    usage: dict[str, Any] = field(default_factory=dict)
 
 
 # Messages in, StreamResult out — ChatClient.complete's shape, injectable in

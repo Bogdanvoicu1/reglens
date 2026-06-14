@@ -10,7 +10,7 @@ import uuid
 from dataclasses import dataclass
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Chunk, Corpus, Document
@@ -40,7 +40,7 @@ def rrf_fuse(rankings: list[list[uuid.UUID]], k: int = RRF_K) -> dict[uuid.UUID,
     return scores
 
 
-def _base_query(corpus_slugs: list[str] | None):
+def _base_query(corpus_slugs: list[str] | None) -> Select[tuple[uuid.UUID]]:
     q = (
         select(Chunk.id)
         .join(Document, Chunk.document_id == Document.id)

@@ -40,7 +40,8 @@ async def embed_query_cached(embedder: EmbeddingClient, question: str) -> list[f
         payload = None
     if payload:
         EMBEDDING_CACHE_EVENTS.labels("hit").inc()
-        return json.loads(payload)
+        cached: list[float] = json.loads(payload)
+        return cached
 
     EMBEDDING_CACHE_EVENTS.labels("miss").inc()
     vector = (await embedder.embed([question]))[0]

@@ -24,7 +24,7 @@ def get_langfuse() -> Any | None:
     if not (settings.langfuse_public_key and settings.langfuse_secret_key):
         return None
     try:
-        from langfuse import Langfuse
+        from langfuse import Langfuse  # type: ignore[import-untyped]
 
         return Langfuse(
             public_key=settings.langfuse_public_key,
@@ -59,13 +59,13 @@ class ChatTrace:
             else None
         )
 
-    def generation(self, model: str, messages: list[dict]) -> "_Generation":
+    def generation(self, model: str, messages: list[dict[str, Any]]) -> "_Generation":
         if not self._trace:
             return _Generation(None)
         prompt = messages if get_settings().log_question_text else {"redacted": True}
         return _Generation(self._trace.generation(name="generation", model=model, input=prompt))
 
-    def end(self, output: dict) -> None:
+    def end(self, output: dict[str, Any]) -> None:
         if self._trace:
             self._trace.update(output=output)
 
@@ -83,7 +83,7 @@ class _Generation:
     def __init__(self, gen: Any | None) -> None:
         self._gen = gen
 
-    def end(self, output: str, usage: dict | None) -> None:
+    def end(self, output: str, usage: dict[str, Any] | None) -> None:
         if self._gen:
             usage_payload = None
             if usage:

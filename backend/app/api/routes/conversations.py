@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -24,7 +24,7 @@ class MessageOut(BaseModel):
     id: uuid.UUID
     role: str
     content: str
-    citations: dict | None
+    citations: dict[str, Any] | None
     latency_ms: int | None
     created_at: datetime
 
@@ -75,7 +75,7 @@ async def delete_conversation(
     conversation_id: uuid.UUID,
     auth: Annotated[AuthContext, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> dict:
+) -> dict[str, str]:
     conversation = await session.get(Conversation, conversation_id)
     if conversation is None or conversation.tenant_id != auth.tenant_id:
         raise HTTPException(status_code=404, detail="Conversation not found")

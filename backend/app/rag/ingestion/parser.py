@@ -20,9 +20,23 @@ from dataclasses import dataclass, field
 
 from bs4 import BeautifulSoup, Tag, XMLParsedAsHTMLWarning
 
-# EUR-Lex serves XHTML with an XML declaration; the lxml HTML parser handles it
-# fine, so silence the advisory warning.
-warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
+def _make_soup(html: str) -> BeautifulSoup:
+    # EUR-Lex serves XHTML with an XML declaration; the lxml HTML parser handles
+    # it fine, so silence the advisory warning at the call site (a module-level
+    # filter is reset by pytest's warning capture).
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", XMLParsedAsHTMLWarning)
+        return BeautifulSoup(html, "lxml")
+
+
+def _attr(tag: Tag, name: str) -> str:
+    """A tag attribute as a plain string (bs4 may return a list for multi-valued
+    attributes; ids and our class checks are always single-valued here)."""
+    value = tag.get(name, "")
+    if isinstance(value, list):
+        return " ".join(value)
+    return value or ""
 
 
 @dataclass
@@ -64,15 +78,13 @@ def _flatten_block(block: Tag) -> str:
             if text:
                 parts.append(text)
     # Dedupe while preserving order (nested find_all can revisit content)
-    seen: set[str] = set()
-    unique = [p for p in parts if not (p in seen or seen.add(p))]
-    return " ".join(unique)
+    return " ".join(dict.fromkeys(parts))
 
 
 def parse_articles(soup: BeautifulSoup) -> list[ParsedDocument]:
     docs: list[ParsedDocument] = []
     for div in soup.find_all("div", class_="eli-subdivision", id=re.compile(r"^art_\d+$")):
-        number = div.get("id", "").removeprefix("art_")
+        number = _attr(div, "id").removeprefix("art_")
         title_el = div.find("p", class_="oj-sti-art")
         title = _clean(title_el.get_text(" ")) if title_el else ""
         doc = ParsedDocument(kind="article", ref=f"Art. {number}", title=title)
@@ -81,7 +93,7 @@ def parse_articles(soup: BeautifulSoup) -> list[ParsedDocument]:
         para_divs = [
             c
             for c in div.find_all("div", recursive=False)
-            if re.fullmatch(r"\d+\.\d+", c.get("id", "") or "")
+            if re.fullmatch(r"\d+\.\d+", _attr(c, "id"))
         ]
         if para_divs:
             for i, p_div in enumerate(para_divs, start=1):
@@ -103,7 +115,7 @@ def parse_articles(soup: BeautifulSoup) -> list[ParsedDocument]:
 def parse_recitals(soup: BeautifulSoup) -> list[ParsedDocument]:
     docs: list[ParsedDocument] = []
     for div in soup.find_all("div", class_="eli-subdivision", id=re.compile(r"^rct_\d+$")):
-        number = div.get("id", "").removeprefix("rct_")
+        number = _attr(div, "id").removeprefix("rct_")
         text = _flatten_block(div)
         # Strip the leading "(N)" marker that comes from the numbering column.
         text = re.sub(rf"^\({number}\)\s*", "", text)
@@ -225,5 +237,5 @@ def parse_annexes(soup: BeautifulSoup) -> list[ParsedDocument]:
 
 
 def parse_corpus_html(html: str) -> list[ParsedDocument]:
-    soup = BeautifulSoup(html, "lxml")
+    soup = _make_soup(html)
     return parse_articles(soup) + parse_annexes(soup) + parse_recitals(soup)

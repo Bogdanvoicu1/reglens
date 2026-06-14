@@ -2,7 +2,7 @@ import json
 import time
 import uuid
 from collections.abc import AsyncIterator
-from typing import Annotated
+from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -46,7 +46,7 @@ class ChatRequest(BaseModel):
     conversation_id: uuid.UUID | None = None
 
 
-def _sse(event: str, data: dict) -> str:
+def _sse(event: str, data: dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
@@ -71,8 +71,8 @@ async def _persist_exchange(
     req: ChatRequest,
     answer: str,
     *,
-    citations: dict | None,
-    usage: dict | None,
+    citations: dict[str, Any] | None,
+    usage: dict[str, Any] | None,
     latency_ms: int,
 ) -> uuid.UUID:
     conversation_id = req.conversation_id
@@ -268,7 +268,7 @@ async def chat(
     req: ChatRequest,
     auth: Annotated[AuthContext, Depends(rate_limited_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
-):
+) -> StreamingResponse:
     if req.conversation_id is not None:
         conversation = await session.get(Conversation, req.conversation_id)
         if conversation is None or conversation.tenant_id != auth.tenant_id:
