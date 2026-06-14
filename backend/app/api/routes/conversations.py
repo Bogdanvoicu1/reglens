@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import AuthContext, get_current_user
@@ -68,3 +68,18 @@ async def get_conversation(
         created_at=conversation.created_at,
         messages=[MessageOut.model_validate(m, from_attributes=True) for m in messages],
     )
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: uuid.UUID,
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict:
+    conversation = await session.get(Conversation, conversation_id)
+    if conversation is None or conversation.tenant_id != auth.tenant_id:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    await session.execute(delete(Message).where(Message.conversation_id == conversation_id))
+    await session.execute(delete(Conversation).where(Conversation.id == conversation_id))
+    await session.commit()
+    return {"status": "deleted"}

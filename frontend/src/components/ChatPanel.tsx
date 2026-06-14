@@ -53,6 +53,7 @@ export function ChatPanel({
 }) {
   const queryClient = useQueryClient();
   const [question, setQuestion] = useState("");
+  const [currentQuestion, setCurrentQuestion] = useState("");
   const [selectedCorpora, setSelectedCorpora] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<number | null>(null);
 
@@ -74,9 +75,12 @@ export function ChatPanel({
     // Keep the live stream card (with its sources panel) when the change is
     // just the newly-created conversation becoming active; reset otherwise.
     if (conversationId !== null && conversationId === streamedConvId) return;
+    // Only reset if we're not currently streaming a new question
+    if (state.phase !== "idle") return;
     reset();
+    setCurrentQuestion("");
     setHighlighted(null);
-  }, [conversationId, streamedConvId, reset]);
+  }, [conversationId, streamedConvId, reset, state.phase]);
 
   // The streamed exchange is also persisted; don't render it twice.
   const allMessages = history?.messages ?? [];
@@ -93,6 +97,7 @@ export function ChatPanel({
   const ask = (text?: string) => {
     const q = (text ?? question).trim();
     if (q.length < 3 || state.phase === "loading" || state.phase === "streaming") return;
+    setCurrentQuestion(q);
     setQuestion("");
     setHighlighted(null);
     void send(q, selectedCorpora, conversationId);
@@ -132,44 +137,51 @@ export function ChatPanel({
               ))}
 
               {showStream && (
-                <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-                  {state.phase === "loading" && (
-                    <div className="space-y-2.5">
-                      <div className="shimmer h-3.5 w-2/3 rounded-md" />
-                      <div className="shimmer h-3.5 w-1/2 rounded-md" />
-                      <div className="text-xs text-zinc-600">Retrieving sources…</div>
-                    </div>
-                  )}
-                  {state.phase === "refused" && (
-                    <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-3.5 text-sm text-amber-200">
-                      <span className="font-semibold">Cannot answer from the corpus.</span>{" "}
-                      {state.refusalReason}
-                    </div>
-                  )}
-                  {state.phase === "error" && (
-                    <div className="rounded-xl border border-red-400/20 bg-red-500/10 p-3.5 text-sm text-red-300">
-                      {state.error}
-                    </div>
-                  )}
-                  {state.answer && (
-                    <AnswerView
-                      text={state.answer}
-                      onCite={onCite}
-                      streaming={state.phase === "streaming"}
-                    />
-                  )}
-                  {state.phase === "done" && state.done && (
-                    <div className="mt-3 flex items-center gap-2.5 border-t border-white/5 pt-2.5 text-[11px] text-zinc-500">
-                      <span>{state.done.latency_ms} ms</span>
-                      {state.done.cached && (
-                        <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 font-medium text-emerald-300">
-                          cached
-                        </span>
-                      )}
-                      <span>cites {state.done.cited_sources.join(", ") || "—"}</span>
-                    </div>
-                  )}
-                </div>
+                <>
+                  <div className="flex justify-end">
+                    <span className="inline-block max-w-xl rounded-2xl rounded-br-md bg-blue-500/15 px-4 py-2.5 text-left text-sm text-blue-100 ring-1 ring-inset ring-blue-400/20">
+                      {currentQuestion}
+                    </span>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
+                    {state.phase === "loading" && (
+                      <div className="space-y-2.5">
+                        <div className="shimmer h-3.5 w-2/3 rounded-md" />
+                        <div className="shimmer h-3.5 w-1/2 rounded-md" />
+                        <div className="text-xs text-zinc-600">Retrieving sources…</div>
+                      </div>
+                    )}
+                    {state.phase === "refused" && (
+                      <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-3.5 text-sm text-amber-200">
+                        <span className="font-semibold">Cannot answer from the corpus.</span>{" "}
+                        {state.refusalReason}
+                      </div>
+                    )}
+                    {state.phase === "error" && (
+                      <div className="rounded-xl border border-red-400/20 bg-red-500/10 p-3.5 text-sm text-red-300">
+                        {state.error}
+                      </div>
+                    )}
+                    {state.answer && (
+                      <AnswerView
+                        text={state.answer}
+                        onCite={onCite}
+                        streaming={state.phase === "streaming"}
+                      />
+                    )}
+                    {state.phase === "done" && state.done && (
+                      <div className="mt-3 flex items-center gap-2.5 border-t border-white/5 pt-2.5 text-[11px] text-zinc-500">
+                        <span>{state.done.latency_ms} ms</span>
+                        {state.done.cached && (
+                          <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 font-medium text-emerald-300">
+                            cached
+                          </span>
+                        )}
+                        <span>cites {state.done.cited_sources.join(", ") || "—"}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>

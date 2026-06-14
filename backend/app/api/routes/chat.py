@@ -7,6 +7,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
@@ -17,7 +18,8 @@ from app.db.session import get_session
 from app.observability.rag_metrics import CACHE_EVENTS, RETRIEVAL_TOP_SCORE, record_chat
 from app.observability.tracing import ChatTrace
 from app.rag.generation.grounded import build_messages, group_sources, validate_answer
-from app.rag.retrieval.hybrid import retrieve
+from app.rag.retrieval.contextualize import HISTORY_MESSAGES, contextualize_question
+from app.rag.retrieval.hybrid import expand_acronyms, retrieve
 from app.services.answer_cache import (
     cache_key,
     corpus_fingerprint,
@@ -46,6 +48,21 @@ class ChatRequest(BaseModel):
 
 def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+async def _recent_history(
+    session: AsyncSession, conversation_id: uuid.UUID
+) -> list[tuple[str, str]]:
+    """The last few turns of a conversation, oldest-first, for query rewriting."""
+    rows = (
+        await session.execute(
+            select(Message.role, Message.content)
+            .where(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at.desc())
+            .limit(HISTORY_MESSAGES)
+        )
+    ).all()
+    return [(role, content) for role, content in reversed(rows)]
 
 
 async def _persist_exchange(
@@ -90,7 +107,24 @@ async def _chat_stream(
     trace = ChatTrace(req.question, str(auth.user_id), str(auth.tenant_id))
     try:
         fingerprint = await corpus_fingerprint(session, req.corpus_slugs)
-        key = cache_key(req.question, fingerprint, req.top_k)
+
+        # Resolve follow-ups against recent turns so retrieval and the answer
+        # cache key off the user's intent, not bare pronouns ("what about
+        # minors?"). A first turn has no history, adds no LLM call, and keeps
+        # the single-turn cache key.
+        search_question = req.question
+        if req.conversation_id is not None and (
+            history := await _recent_history(session, req.conversation_id)
+        ):
+            rewriter = ChatClient()
+            try:
+                search_question = await contextualize_question(
+                    rewriter.complete, req.question, history
+                )
+            finally:
+                await rewriter.aclose()
+
+        key = cache_key(search_question, fingerprint, req.top_k)
         if cached := await get_cached_answer(key):
             CACHE_EVENTS.labels("hit").inc()
             latency_ms = round((time.perf_counter() - start) * 1000)
@@ -123,11 +157,16 @@ async def _chat_stream(
         embedder = EmbeddingClient()
         llm = ChatClient()
         try:
-            retrieval_span = trace.retrieval(req.question)
-            query_embedding = await embed_query_cached(embedder, req.question)
+            retrieval_span = trace.retrieval(search_question)
+            # Expand acronyms ("DPIA" -> "data protection impact assessment")
+            # only for retrieval, so the dense and full-text rankings converge on
+            # the same article the regulation spells out. The generation prompt
+            # and cache key keep the user's original wording.
+            retrieval_query = expand_acronyms(search_question)
+            query_embedding = await embed_query_cached(embedder, retrieval_query)
             sources = await retrieve(
                 session,
-                req.question,
+                retrieval_query,
                 query_embedding,
                 corpus_slugs=req.corpus_slugs,
                 top_k=req.top_k,
@@ -160,7 +199,7 @@ async def _chat_stream(
             ]
             yield _sse("sources", {"sources": source_payload})
 
-            prompt_messages = build_messages(req.question, grouped)
+            prompt_messages = build_messages(search_question, grouped)
             generation = trace.generation(get_settings().generation_model, prompt_messages)
             result = None
             async for token, result in llm.stream(  # noqa: B007 — result accumulates state

@@ -65,6 +65,27 @@ async def _vector_ranking(
 
 _WORD = re.compile(r"[A-Za-z][A-Za-z0-9-]+")
 
+# Acronyms practitioners type but the regulations only ever spell out. Full-text
+# search for the acronym itself ("DPIA") matches nothing, so the term reaches
+# only the dense vector — and a vector-only hit can't clear the cross-retriever
+# agreement the answer gate requires (MIN_TOP_SCORE). Expanding to the canonical
+# phrase lets full-text find the article (e.g. GDPR Art. 35) too.
+#
+# Only acronyms whose spelled-out form names a specific provision belong here.
+# "GDPR" is deliberately excluded: its expansion ("general data protection
+# regulation") sits in every GDPR chunk's header, so expanding it would match
+# the whole corpus and drown the signal.
+_ACRONYM_EXPANSIONS = {
+    "dpia": "data protection impact assessment",
+    "dpo": "data protection officer",
+}
+
+
+def expand_acronyms(query: str) -> str:
+    tokens = dict.fromkeys(m.group(0).lower() for m in _WORD.finditer(query))
+    extra = [_ACRONYM_EXPANSIONS[t] for t in tokens if t in _ACRONYM_EXPANSIONS]
+    return f"{query} {' '.join(extra)}" if extra else query
+
 
 def fts_query_text(query: str) -> str:
     """OR the query's words for websearch_to_tsquery.
@@ -73,6 +94,7 @@ def fts_query_text(query: str) -> str:
     absent from the legal text (e.g. "GDPR", which the regulation never calls
     itself). OR + ts_rank degrades gracefully: more matched terms rank higher.
     """
+    query = expand_acronyms(query)
     return " OR ".join(dict.fromkeys(m.group(0).lower() for m in _WORD.finditer(query)))
 
 

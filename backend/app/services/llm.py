@@ -1,7 +1,7 @@
 """Streaming chat client for any OpenAI-compatible /chat/completions endpoint."""
 
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 
 import httpx
@@ -19,6 +19,11 @@ class StreamResult:
 
     text: str = ""
     usage: dict = field(default_factory=dict)
+
+
+# Messages in, StreamResult out — ChatClient.complete's shape, injectable in
+# tests and reused by RAG/assessment stages that call the LLM.
+LLMComplete = Callable[[list[dict[str, str]]], Awaitable[StreamResult]]
 
 
 class ChatClient:

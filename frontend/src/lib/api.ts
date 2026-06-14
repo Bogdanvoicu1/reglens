@@ -50,6 +50,10 @@ export const api = {
   getConversation: async (id: string): Promise<ConversationDetail> =>
     (await request(`/api/v1/conversations/${id}`)).json(),
 
+  deleteConversation: async (id: string): Promise<void> => {
+    await request(`/api/v1/conversations/${id}`, { method: "DELETE" });
+  },
+
   listCorpora: async (): Promise<CorpusOut[]> => (await request("/api/v1/corpora")).json(),
 
   createAssessment: (body: { title?: string; description: string; clarify: boolean }) =>

@@ -33,6 +33,9 @@ export default function App() {
               activeId={conversationId}
               onSelect={setConversationId}
               onNew={() => setConversationId(null)}
+              onDelete={(id) => {
+                if (conversationId === id) setConversationId(null);
+              }}
             />
             <ChatPanel conversationId={conversationId} onConversationCreated={setConversationId} />
           </>

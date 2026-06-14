@@ -23,9 +23,15 @@ on Annex III (use-case list) and Annex I (harmonisation legislation).
 ## `retrieval/` — hybrid search
 
 `hybrid.py` runs **vector** (pgvector, HNSW) and **full-text** (Postgres FTS,
-GIN) search in parallel and fuses them with **reciprocal rank fusion (RRF)**.
+GIN) search and fuses them with **reciprocal rank fusion (RRF)**.
 Returns scored sources; a weak top score short-circuits to a refusal before any
 LLM call (off-corpus questions cost $0 in generation).
+
+For multi-turn chat, `contextualize.py` first rewrites a follow-up ("what about
+minors?") into a standalone question from the recent turns, so retrieval and the
+answer cache key off intent rather than pronouns. First turns skip it (no extra
+LLM call); any rewrite failure falls back to the original question, so it can
+never retrieve worse than the single-turn baseline.
 
 ## `generation/` — grounded answers with validated citations
 
