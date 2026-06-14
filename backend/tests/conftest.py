@@ -20,6 +20,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 os.environ["REGLENS_SUPABASE_JWKS_URL"] = "https://test.invalid/jwks.json"
 os.environ["REGLENS_SUPABASE_ISSUER"] = ""
 os.environ["REGLENS_SUPABASE_AUDIENCE"] = "authenticated"
+# Prevents EmbeddingClient/ChatClient.__init__ from raising before monkeypatches fire.
+os.environ.setdefault("REGLENS_LLM_API_KEY", "test-fake-key")
 
 _PRIVATE_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 _PUBLIC_KEY = _PRIVATE_KEY.public_key()
