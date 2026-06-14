@@ -1,0 +1,23 @@
+server {
+    listen ${PORT};
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location /api/ {
+        # BACKEND_URL is substituted at container start (see entrypoint). Locally
+        # via docker compose it is the in-network API service; on Railway it is
+        # the backend service's private URL, e.g. http://backend.railway.internal:8000
+        proxy_pass ${BACKEND_URL};
+        proxy_http_version 1.1;
+        # SSE: disable buffering so tokens reach the client immediately
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Request-Id $request_id;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
