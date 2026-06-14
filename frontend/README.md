@@ -1,73 +1,48 @@
-# React + TypeScript + Vite
+# RegLens frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The RegLens single-page app: a Vite + React 19 + TypeScript SPA with two views
+behind a slim nav rail — **Ask** (streaming grounded chat with inline citation
+chips and a source panel) and **Assess** (the compliance assessment agent:
+intake, a live per-stage timeline, one-round clarification, and the cited
+readiness report). Tailwind v4 styling, TanStack Query for data, supabase-js for
+auth.
 
-Currently, two official plugins are available:
+The application code and its structure are documented in
+[`src/README.md`](src/README.md). This file covers running and shipping the app.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Develop
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env     # add your Supabase URL + anon key (both browser-safe)
+npm install
+npm run dev              # http://localhost:5173, proxying /api to the backend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Type-check (`tsc -b`) then production build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | ESLint over the whole tree |
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Configuration
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Two build-time variables, both safe to expose to the browser (never the
+service-role key) — see `.env.example`:
+
+- `VITE_SUPABASE_URL` — your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` — the publishable/anon key
+
+supabase-js owns the session (persisted + auto-refreshed); the API client reads
+the current access token on demand for the bearer header. The backend verifies
+that token against the project's JWKS. See the repo README's Authentication
+section.
+
+## Production image
+
+The `Dockerfile` builds the SPA and serves it with nginx. Because Vite inlines
+`VITE_*` at build time, the Supabase config is passed as build args (the root
+`docker-compose` wires this from `frontend/.env`). At container start,
+`docker-entrypoint.sh` renders `nginx.conf.template` so the `/api` upstream is
+configurable per environment; `railway.json` carries the Railway deploy config.
+See [`docs/DEPLOY_RAILWAY.md`](../docs/DEPLOY_RAILWAY.md).

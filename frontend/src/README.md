@@ -1,6 +1,6 @@
 # `frontend/src` — React SPA
 
-Vite + React 18 + TypeScript + Tailwind v4 + TanStack Query. Two views behind a
+Vite + React 19 + TypeScript + Tailwind v4 + TanStack Query. Two views behind a
 slim nav rail: **Ask** (streaming grounded chat) and **Assess** (the compliance
 assessment agent). Dark zinc + EU-blue theme.
 

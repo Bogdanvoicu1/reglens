@@ -25,6 +25,31 @@ per-tenant rate limits, Supabase for auth, Prometheus + Grafana for
 observability. See [docs/DESIGN.md](docs/DESIGN.md) and
 [docs/PLAN.md](docs/PLAN.md).
 
+```mermaid
+flowchart LR
+  user([Browser SPA]) -->|"SSE / bearer JWT"| api[FastAPI]
+  user -.->|"supabase-js session"| sb[Supabase auth]
+
+  subgraph req["Per request"]
+    api -->|"verify JWKS, resolve tenant"| auth[Auth + JIT tenancy]
+    api -->|"sliding window"| rl{{Redis: rate limit}}
+    api -->|"answer + embedding cache"| cache{{Redis: cache}}
+    api --> retr["Hybrid retrieval<br/>pgvector + FTS → RRF"]
+    retr -->|"weak match"| refuse([Refuse, no LLM])
+    retr --> gen["Grounded generation<br/>+ citation validation"]
+    gen --> stream([Token stream])
+  end
+
+  auth -.->|"JWKS"| sb
+  retr --> pg[("Postgres + pgvector<br/>corpus, chunks, history")]
+  gen -->|"OpenRouter"| llm[LLM]
+  api --> obs["/metrics → Prometheus → Grafana<br/>optional Langfuse traces"]
+```
+
+Beyond grounded Q&A, RegLens ships a **Compliance Assessment Agent** — a
+staged pipeline that turns a system description into a cited readiness report.
+See [docs/ASSESSMENT_AGENT.md](docs/ASSESSMENT_AGENT.md).
+
 ## Quick start
 
 ```bash
@@ -56,6 +81,8 @@ configured provider, and stores everything transactionally. Use
 `--skip-embed` to inspect parsing without an API key.
 
 ### Authentication
+
+![RegLens sign-in](docs/login.png)
 
 The API verifies a Supabase JWT on every request, locally against the project's
 JWKS endpoint (`REGLENS_SUPABASE_JWKS_URL`) — asymmetric keys, so there's no
@@ -214,6 +241,10 @@ uv run ruff check .    # lint
 uv run mypy app        # types
 ```
 
+The suite runs against a throwaway `<db>_test` database (auto-created and
+migrated on first run) so it never touches your dev corpus or data. Override the
+target with `REGLENS_TEST_DATABASE_URL`.
+
 ## Status
 
 - [x] M0 — Foundation: API skeleton, Alembic, Docker, observability middleware, CI
@@ -224,10 +255,15 @@ uv run mypy app        # types
 - [x] M5 — React SPA: streaming chat, clickable citation chips, source panel, history, corpus filter; nginx Docker image
 - [x] M6 — RAG metrics + provisioned Grafana dashboards, optional Langfuse tracing, problem+json errors, security headers, body limits
 - [x] Security & cost hardening — see SECURITY.md and Cost engineering
-- [ ] M7 — Docs & demo
+- [x] M7 — Docs & demo: architecture diagram, annotated screenshots, one-command setup, in-README eval report, per-subsystem READMEs, Railway + Supabase deploy guides
 - [x] v2 — Compliance Assessment Agent: system description → grounded readiness report ([design](docs/ASSESSMENT_AGENT.md)). A0–A4 complete: annex ingestion, rulebook v1 (31 rules), staged engine (profile → classification → obligation mapping → gaps → remediation → report) with markdown export and clarification round, the React UI (intake, live stage timeline, report view), and the eval/hardening layer — a 28-scenario real-engine suite with a two-tier safety gate (blocker recall 1.0, zero false-clears, injection resistance 0.91), judge-tier prohibited-practice classification, and per-assessment cost/Grafana panels.
 
-![RegLens assessment report](docs/assessment-report.png)
+The agent runs as a live, staged pipeline — describe the system, watch each
+stage complete over SSE, then read the cited report:
+
+| Intake | Live stage timeline | Report |
+|---|---|---|
+| ![Assessment intake](docs/assess-intake.png) | ![Assessment stage timeline](docs/assess-timeline.png) | ![Assessment report](docs/assessment-report.png) |
 
 ## Deployment
 

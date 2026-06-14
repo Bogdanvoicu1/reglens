@@ -29,13 +29,13 @@ That split matters for two things this guide does *not* cover, on purpose:
 
 Project Settings → API:
 
-| Value | Where it is used | Public? |
-| --- | --- | --- |
-| Project URL (`https://<ref>.supabase.co`) | Frontend `VITE_SUPABASE_URL` | Yes |
-| `anon` / publishable key | Frontend `VITE_SUPABASE_ANON_KEY` | **Yes** — designed for the browser |
-| JWKS URL (`https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`) | Backend `REGLENS_SUPABASE_JWKS_URL` | Yes |
-| Issuer (`https://<ref>.supabase.co/auth/v1`) | Backend `REGLENS_SUPABASE_ISSUER` (optional) | Yes |
-| `service_role` key | **Not used by RegLens. Never put it in any env file or the browser.** | No — full DB access |
+| Value                                                                | Where it is used                                                      | Public?                            |
+| ----------------------------------------------------------------------| -----------------------------------------------------------------------| ------------------------------------|
+| Project URL (`https://<ref>.supabase.co`)                            | Frontend `VITE_SUPABASE_URL`                                          | Yes                                |
+| `anon` / publishable key                                             | Frontend `VITE_SUPABASE_ANON_KEY`                                     | **Yes** — designed for the browser |
+| JWKS URL (`https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`) | Backend `REGLENS_SUPABASE_JWKS_URL`                                   | Yes                                |
+| Issuer (`https://<ref>.supabase.co/auth/v1`)                         | Backend `REGLENS_SUPABASE_ISSUER` (optional)                          | Yes                                |
+| `service_role` key                                                   | **Not used by RegLens. Never put it in any env file or the browser.** | No — full DB access                |
 
 RegLens needs no service-role key: it never talks to Supabase's database or
 admin API. If you see it asked for anywhere in this project, that is a bug.

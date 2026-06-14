@@ -19,8 +19,10 @@
 - **M6 — Observability & hardening**: Prometheus metrics (latency, token
   cost, cache hit rate, retrieval scores), Grafana dashboards, error
   taxonomy, load-test sanity, security pass (headers, input limits).
-- **M7 — Docs & polish**: README with architecture diagram, demo GIF, setup
-  in one command, eval report in README.
+- **M7 — Docs & polish** *(done)*: README with a rendered architecture
+  diagram, annotated chat + assessment screenshots, one-command Docker setup,
+  the eval report inline, per-subsystem READMEs, and the Railway + Supabase
+  deployment guides. (Demo visuals are static screenshots rather than a GIF.)
 
 ## Repository layout
 
@@ -118,5 +120,5 @@ incl. injection red-team; two-tier safety gate — false-clear rate = 0 hard
 gate plus verdict-accuracy / blocker-recall / injection-resistance quality
 gates; judge-tier model for the prohibited-practice batch; per-assessment
 cost + Grafana panels; wired into the Evals CI workflow).
-v2 assessment agent complete (A0–A4); A5 is backlog. Next: M7 — docs &
-deploy polish.
+v2 assessment agent complete (A0–A4); A5 is backlog. M7 (docs & deploy
+polish) complete — all core milestones shipped.
