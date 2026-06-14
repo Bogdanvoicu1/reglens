@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useChatStream } from "../hooks/useChatStream";
@@ -71,16 +71,23 @@ export function ChatPanel({
   });
 
   const streamedConvId = state.done?.conversation_id ?? null;
-  useEffect(() => {
-    // Keep the live stream card (with its sources panel) when the change is
-    // just the newly-created conversation becoming active; reset otherwise.
-    if (conversationId !== null && conversationId === streamedConvId) return;
-    // Only reset if we're not currently streaming a new question
-    if (state.phase !== "idle") return;
+
+  // Reset transient UI when the user switches to a different conversation,
+  // unless the change is just the newly-created conversation becoming active
+  // (then we keep the live stream card and its sources panel). Done during
+  // render via a tracked previous value rather than in an effect, so the reset
+  // is applied before paint and we avoid a redundant render pass.
+  const [prevConvId, setPrevConvId] = useState(conversationId);
+  if (
+    conversationId !== prevConvId &&
+    !(conversationId !== null && conversationId === streamedConvId) &&
+    state.phase === "idle"
+  ) {
+    setPrevConvId(conversationId);
     reset();
     setCurrentQuestion("");
     setHighlighted(null);
-  }, [conversationId, streamedConvId, reset, state.phase]);
+  }
 
   // The streamed exchange is also persisted; don't render it twice.
   const allMessages = history?.messages ?? [];
