@@ -41,7 +41,7 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run python -m app.cli ingest ai-act gdpr
       - run: uv run python -m evals.cli ${{ inputs.suite }} --no-save
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: eval-report
