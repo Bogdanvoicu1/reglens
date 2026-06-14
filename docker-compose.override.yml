@@ -1,11 +1,18 @@
-# Development overrides — merged automatically by `docker compose up`.
-# Publishes Postgres/Redis to the host so the locally-run API, tests, and
-# ingestion CLI can reach them. Production deploys use the base file only:
-#   docker compose -f docker-compose.yml up -d
+# ⚠️ DEVELOPMENT ONLY. Docker Compose merges this file automatically on a bare
+# `docker compose up`, so it would also publish the datastores in any other
+# environment that runs that command. Ports are bound to 127.0.0.1 so they are
+# never reachable off the host, but production must still use the base file
+# explicitly and never this override:
+#
+#     docker compose -f docker-compose.yml up -d        # production / CI
+#     docker compose up -d                              # local dev (this file applies)
+#
+# Purpose: expose Postgres/Redis to the host so the locally-run API, tests, and
+# ingestion CLI can reach them.
 services:
   postgres:
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
   redis:
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
